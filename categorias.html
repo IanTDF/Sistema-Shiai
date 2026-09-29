@@ -66,17 +66,25 @@ function adicionar() {
   render();
 }
 
-function resetarSistema() {
-  if (!confirm("Tem certeza que deseja apagar todo o campeonato?")) return;
+async function resetarSistema() {
+  if (!confirm("Tem certeza que deseja apagar todo o campeonato?\n\nIsso apaga para TODOS os dispositivos conectados.")) return;
 
-  localStorage.removeItem("categorias_db");
-  localStorage.removeItem("lutas_db");
-  localStorage.removeItem("areas_db");
+  try {
+    await resetarCampeonato();   // apaga categorias, lutas e áreas no Firestore
+  } catch (e) {
+    console.error(e);
+    return alert("Erro ao resetar o campeonato. Veja o console (F12).");
+  }
+
+  // limpa também o que é local deste aparelho
+  localStorage.removeItem("numAreas");
+  localStorage.removeItem("categoriaAtual");
+  localStorage.removeItem("areaAtual");
 
   alert("Campeonato resetado com sucesso!");
   location.reload();
 }
-
+  
 function render() {
   let html = "";
 
