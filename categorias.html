@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Categorias</title>
+</head>
+<body>
+
+<h1>Categorias</h1>
+
+<button onclick="resetarSistema()">🔴 Resetar Campeonato</button>
+
+<input id="nomeCategoria" placeholder="Nome da categoria">
+<br><br>
+
+<textarea id="listaAtletas" rows="6" cols="30" placeholder="Um atleta por linha"></textarea>
+<br><br>
+
+<button onclick="adicionar()">Adicionar</button>
+
+<hr>
+
+<h2>Áreas (Tatames)</h2>
+<input id="qtdAreas" type="number" min="1" placeholder="Quantidade de áreas" style="width:180px;">
+<button onclick="configurarQtdAreas()">Configurar áreas</button>
+<button onclick="acaoDistribuirCampeonato()">🥋 Distribuir Campeonato</button>
+
+<div id="listaAreas"></div>
+
+<hr>
+
+<div id="lista"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="judo-store.js"></script>
+<script>
+let categorias = [];
+
+iniciarStore().then(() => {
+  categorias = getCategorias();
+  render();
+  renderAreas();
+
+  onStoreUpdate(() => {
+    categorias = getCategorias();
+    render();
+    renderAreas();
+  });
+});
+
+function adicionar() {
+  let nome = document.getElementById("nomeCategoria").value;
+  let atletas = document.getElementById("listaAtletas").value
+    .split("\n").filter(n => n.trim() !== "");
+
+  if (!nome || atletas.length === 0) return alert("Preencha tudo");
+
+  // O motor (judo-store.js) decide o tipo de chaveamento, cria a
+  // categoria e gera as lutas iniciais. A distribuição só acontece
+  // ao clicar em "Distribuir Campeonato".
+  let { categoria } = criarCategoriaCompleta(nome, atletas);
+
+  categorias.push(categoria);
+
+  render();
+}
+
+function resetarSistema() {
+  if (!confirm("Tem certeza que deseja apagar todo o campeonato?")) return;
+
+  localStorage.removeItem("categorias_db");
+  localStorage.removeItem("lutas_db");
+  localStorage.removeItem("areas_db");
+
+  alert("Campeonato resetado com sucesso!");
+  location.reload();
+}
+
+function render() {
+  let html = "";
+
+  categorias.forEach((c, i) => {
+    html += `
+      <div style="border:1px solid black; margin:10px; padding:10px;">
+        <strong>${c.nome}</strong><br>
+        ${c.atletas.length} atletas<br>
+        <button onclick="abrir(${i})">Abrir (somente leitura)</button>
+      </div>
+    `;
+  });
+
+  document.getElementById("lista").innerHTML = html;
+}
+
+function abrir(i) {
+  // Registrar resultados agora só é feito na tela de ÁREA.
+  // Esta tela mostra o chaveamento em modo de leitura.
+  localStorage.setItem("categoriaAtual", JSON.stringify(categorias[i]));
+  window.open("chaveamento.html", "_blank");
+}
+
+// ================= ÁREAS =================
+
+function configurarQtdAreas() {
+  let qtd = parseInt(document.getElementById("qtdAreas").value);
+  if (!qtd || qtd < 1) return alert("Informe uma quantidade válida de áreas");
+
+  configurarAreas(qtd);
+  renderAreas();
+}
+
+function acaoDistribuirCampeonato() {
+  let resultado = distribuirCampeonato(); // vem do judo-store.js
+
+  if (resultado === -1) {
+    alert("Configure as áreas (tatames) antes de distribuir.");
+    return;
+  }
+  if (resultado === 0) {
+    alert("Nenhuma luta nova para distribuir.");
+    return;
+  }
+
+  renderAreas();
+  alert(resultado + " lutas distribuídas entre as áreas!");
+}
+
+function renderAreas() {
+  let areas = getAreas();
+  let html = "";
+
+  areas.forEach(a => {
+    html += `
+      <div style="border:1px solid #555; margin:10px; padding:10px;">
+        <strong>Área ${a.id}</strong><br>
+        ${a.lutas.length} luta(s) na fila<br>
+        <button onclick="abrirArea(${a.id})">Abrir área</button>
+      </div>
+    `;
+  });
+
+  document.getElementById("listaAreas").innerHTML = html || "<p>Nenhuma área configurada ainda.</p>";
+}
+
+function abrirArea(id) {
+  window.open("area.html?area=" + id, "_blank");
+}
+
+// Se a página for recarregada, mostra as áreas já configuradas antes
+renderAreas();
+</script>
+
+</body>
+</html>

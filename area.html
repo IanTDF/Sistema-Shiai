@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Área</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+    }
+
+    .luta {
+      border: 2px solid #000;
+      padding: 10px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+    }
+
+    .cabecalho {
+      font-size: 0.85em;
+      color: #555;
+      margin-bottom: 4px;
+    }
+
+    button {
+      margin: 2px;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+
+    .pendente { color: #555; }
+    .finalizada { color: green; font-weight: bold; }
+    .cancelada { color: #999; font-style: italic; }
+
+    h1 { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+<h1 id="titulo"></h1>
+<div id="fila"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="judo-store.js"></script>
+<script>
+// ================= DADOS =================
+let areaId = Number(new URLSearchParams(location.search).get("area"));
+
+if (!areaId) {
+  document.body.innerHTML = "<h2>Erro: nenhuma área selecionada</h2>";
+  throw new Error("Sem área selecionada");
+}
+
+document.getElementById("titulo").innerText = "Área " + areaId;
+
+function rotuloTipo(tipo) {
+  if (tipo === "melhorDe3") return "Melhor de 3";
+  if (tipo === "rodizio") return "Rodízio";
+  return "Mata-mata";
+}
+
+// ================= AÇÕES (única tela que pode registrar resultado) =================
+// Toda ação de resultado passa OBRIGATORIAMENTE por atualizarResultado(),
+// função central do motor em judo-store.js. Esta tela nunca calcula
+// pontuação, nunca decide avanço de fase e nunca cria lutas — ela só
+// chama o motor e re-renderiza o que ele devolve.
+function registrar(idLuta, vencedor, tipoVitoria) {
+  atualizarResultado(idLuta, vencedor, tipoVitoria);
+  render();
+}
+
+// ================= RENDER =================
+function render() {
+  let lutas = getLutasDaArea(areaId);
+  let html = "";
+
+  if (!lutas.length) {
+    html = "<p>Nenhuma luta atribuída a esta área ainda.</p>";
+  }
+
+  lutas.forEach((l, i) => {
+    let categoria = getCategoriaPorId(l.categoriaId);
+    let nomeCategoria = categoria ? categoria.nome : "Categoria";
+    let faseLabel = l.tipo === "rodizio" ? `Rodada ${l.fase}`
+      : l.tipo === "mataMata" ? `Fase ${l.fase}`
+      : `Luta ${l.fase}`;
+
+    let cabecalho = `${nomeCategoria} — ${rotuloTipo(l.tipo)} — ${faseLabel}`;
+    let corpo = "";
+
+    if (l.status === "finalizada") {
+      let tipoTexto = l.tipoVitoria ? ` (${l.tipoVitoria})` : "";
+      corpo = `<span class="finalizada">✔ Vencedor: ${l.vencedor}${tipoTexto}</span>`;
+    }
+    else if (l.status === "cancelada") {
+      corpo = `<span class="cancelada">Cancelada (série já decidida)</span>`;
+    }
+    else if (l.tipo === "mataMata") {
+      // Mata-mata: só se escolhe o vencedor, sem tipo de vitória
+      corpo = `
+        <button onclick="registrar(${l.id},'${l.atletaA}',null)">${l.atletaA} venceu</button>
+        <button onclick="registrar(${l.id},'${l.atletaB}',null)">${l.atletaB} venceu</button>
+      `;
+    }
+    else {
+      // Melhor de 3 / Rodízio: escolha do vencedor + tipo de vitória
+      corpo = `
+        <div>
+          ${l.atletaA}:
+          <button onclick="registrar(${l.id},'${l.atletaA}','ippon')">Ippon</button>
+          <button onclick="registrar(${l.id},'${l.atletaA}','waza')">Waza</button>
+          <button onclick="registrar(${l.id},'${l.atletaA}','yuko')">Yuko</button>
+        </div>
+        <div>
+          ${l.atletaB}:
+          <button onclick="registrar(${l.id},'${l.atletaB}','ippon')">Ippon</button>
+          <button onclick="registrar(${l.id},'${l.atletaB}','waza')">Waza</button>
+          <button onclick="registrar(${l.id},'${l.atletaB}','yuko')">Yuko</button>
+        </div>
+      `;
+    }
+
+    html += `
+      <div class="luta">
+        <div class="cabecalho">${cabecalho}</div>
+        <strong>#${i + 1} - ${l.atletaA} 🆚 ${l.atletaB}</strong><br>
+        ${corpo}
+      </div>
+    `;
+  });
+
+  document.getElementById("fila").innerHTML = html;
+}
+
+// Espera os dados chegarem do Firebase, desenha e depois redesenha
+// automaticamente a cada mudança vinda de qualquer dispositivo
+// (ex.: o motor adicionou uma nova luta de mata-mata nesta área).
+iniciarStore().then(() => {
+  render();
+  onStoreUpdate(() => render());
+});
+</script>
+
+</body>
+</html>
