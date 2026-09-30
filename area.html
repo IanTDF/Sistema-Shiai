@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <html>
-  <div class="container">
 
-  <h1>Sistema de Campeonato</h1>
-
-  <div class="card">
-    
 <head>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/picnic">  
   <title>Área</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/picnic">
 
   <style>
     body {
@@ -22,34 +20,23 @@
       margin-bottom: 12px;
       border-radius: 8px;
     }
-
-    .cabecalho {
-      font-size: 0.85em;
-      color: #555;
-      margin-bottom: 4px;
-    }
-
-    button {
-      margin: 2px;
-      padding: 4px 8px;
-      cursor: pointer;
-    }
-
-    .pendente { color: #555; }
-    .finalizada { color: green; font-weight: bold; }
-    .cancelada { color: #999; font-style: italic; }
-
-    h1 { margin-bottom: 10px; }
   </style>
 </head>
+
 <body>
 
-<h1 id="titulo"></h1>
-<div id="fila"></div>
-   </div>
+  <div class="container">
 
-</div>
+    <h1>Sistema de Campeonato</h1>
 
+    <h2 id="titulo"></h2>
+
+    <div id="fila"></div>
+
+  </div>
+
+</body>
+  
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
