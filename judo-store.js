@@ -137,15 +137,22 @@ function onStoreUpdate(callback) {
 
 // Substitui os localStorage.removeItem do resetarSistema()
 async function resetarCampeonato() {
+  console.log("[reset] iniciando...");
   for (const nome of Object.values(COLECOES)) {
-    let snap = await db.collection(nome).get();
+    // source: "server" força ler do servidor (e dá erro claro se estiver
+    // sem conexão), em vez de apagar só o que estava no cache local
+    let snap = await db.collection(nome).get({ source: "server" });
+    console.log(`[reset] ${nome}: ${snap.size} documento(s) no servidor`);
+
     let docs = snap.docs;
     for (let i = 0; i < docs.length; i += 400) {
       let batch = db.batch();
       docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
       await batch.commit();
     }
+    console.log(`[reset] ${nome}: apagada`);
   }
+  console.log("[reset] concluído");
 }
 
 function proximoId(lista) {
