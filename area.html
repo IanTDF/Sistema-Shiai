@@ -143,12 +143,18 @@ function render() {
       corpo = `<span class="cancelada">Cancelada (série já decidida)</span>`;
     }
     else if (l.tipo === "mataMata") {
-      // Mata-mata: só se escolhe o vencedor, sem tipo de vitória
-      corpo = `
-        <button onclick="registrar(${l.id},'${l.atletaA}',null)">${l.atletaA} venceu</button>
-        <button onclick="registrar(${l.id},'${l.atletaB}',null)">${l.atletaB} venceu</button>
-      `;
-    }
+  corpo = `
+    <div style="display:flex; gap:4px;">
+      <button class="btn-azul" onclick="registrar(${l.id},'${l.atletaA}',null)">
+        ${l.atletaA}
+      </button>
+
+      <button class="btn-branco" onclick="registrar(${l.id},'${l.atletaB}',null)">
+        ${l.atletaB}
+      </button>
+    </div>
+  `;
+}
     else {
       // Melhor de 3 / Rodízio: escolha do vencedor + tipo de vitória
       corpo = `
