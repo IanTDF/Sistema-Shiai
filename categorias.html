@@ -70,7 +70,10 @@ async function resetarSistema() {
   if (!confirm("Tem certeza que deseja apagar todo o campeonato?\n\nIsso apaga para TODOS os dispositivos conectados.")) return;
 
   try {
-    await resetarCampeonato();   // apaga categorias, lutas e áreas no Firestore
+        const limite = new Promise((_, rej) =>
+      setTimeout(() => rej(new Error("Sem resposta do Firebase em 15s (rede ou regras?)")), 15000)
+    );
+    await Promise.race([resetarCampeonato(), limite]);
   } catch (e) {
     console.error(e);
     return alert("Erro ao resetar o campeonato. Veja o console (F12).");
