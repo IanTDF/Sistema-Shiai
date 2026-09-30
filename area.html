@@ -152,18 +152,16 @@ function render() {
     else {
       // Melhor de 3 / Rodízio: escolha do vencedor + tipo de vitória
       corpo = `
-        <div>
-          ${l.atletaA}:
-          <button onclick="registrar(${l.id},'${l.atletaA}','ippon')">Ippon</button>
-          <button onclick="registrar(${l.id},'${l.atletaA}','waza')">Waza</button>
-          <button onclick="registrar(${l.id},'${l.atletaA}','yuko')">Yuko</button>
-        </div>
-        <div>
-          ${l.atletaB}:
-          <button onclick="registrar(${l.id},'${l.atletaB}','ippon')">Ippon</button>
-          <button onclick="registrar(${l.id},'${l.atletaB}','waza')">Waza</button>
-          <button onclick="registrar(${l.id},'${l.atletaB}','yuko')">Yuko</button>
-        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:4px;">
+  <button class="btn-azul" onclick="registrar(${l.id},'${l.atletaA}','ippon')">Ippon (${l.atletaA})</button>
+  <button class="btn-branco" onclick="registrar(${l.id},'${l.atletaB}','ippon')">Ippon (${l.atletaB})</button>
+
+  <button class="btn-azul" onclick="registrar(${l.id},'${l.atletaA}','waza')">Waza (${l.atletaA})</button>
+  <button class="btn-branco" onclick="registrar(${l.id},'${l.atletaB}','waza')">Waza (${l.atletaB})</button>
+
+  <button class="btn-azul" onclick="registrar(${l.id},'${l.atletaA}','yuko')">Yuko (${l.atletaA})</button>
+  <button class="btn-branco" onclick="registrar(${l.id},'${l.atletaB}','yuko')">Yuko (${l.atletaB})</button>
+</div>
       `;
     }
 
