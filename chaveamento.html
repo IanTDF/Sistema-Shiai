@@ -195,6 +195,8 @@
       overflow: hidden;
     }
     .mm-card.fin { border-color: var(--verde); }
+    .mm-card.previsto { border-style: dashed; background: #fafbf9; }
+    .mm-card.previsto .mm-num { opacity: .65; }
 
     .mm-num {
       flex: none;
@@ -430,6 +432,7 @@ function nomeRodada(fase, total) {
   if (d === 1) return "Semifinal";
   if (d === 2) return "Quartas de final";
   if (d === 3) return "Oitavas de final";
+  if (d === 4) return "16 avos de final";
   return "Fase " + fase;
 }
 
@@ -488,12 +491,33 @@ function cartaoLuta(l, numero) {
   `;
 }
 
+// Cartão "fantasma" das fases que o motor ainda não gerou
+function cartaoPrevisto(numero) {
+  let linha = `<div class="mm-atl vago"><span class="mm-nome">A definir</span></div>`;
+  return `
+    <article class="mm-card previsto">
+      <div class="mm-num">${numero}</div>
+      <div class="mm-corpo">
+        ${linha}${linha}
+        <div class="mm-rod"><span></span><span class="mm-st">Aguardando atletas</span></div>
+      </div>
+    </article>
+  `;
+}
+
 function painelResultado(categoria) {
   let r = (categoria.finalizada && categoria.resultadoFinal) || {};
+  // O motor guarda os dois bronzes juntos em "terceiro", separados por " / "
+  let terceiros = String(r.terceiro || "")
+    .split(" / ")
+    .map(t => t.trim())
+    .filter(t => t && !/^bye$/i.test(t));
+
   let linhas = [
     ["1", "ouro", r.campeao],
     ["2", "prata", r.vice],
-    ["3", "bronze", r.terceiro]
+    ["3", "bronze", terceiros[0]],
+    ["3", "bronze", terceiros[1]]
   ];
   return `
     <div class="res">
@@ -513,46 +537,58 @@ function renderMataMata(categoria, lutas) {
     return `<p class="vazio-msg">Nenhuma luta gerada para esta categoria.</p>`;
   }
 
-  let total = Math.max.apply(null, lutas.map(l => Number(l.fase)));
-  document.getElementById("chave").innerText = "Chave-" + Math.pow(2, total);
-
   let porFase = {};
   lutas.forEach(l => {
     (porFase[l.fase] = porFase[l.fase] || []).push(l);
   });
   let ordFase = f => (porFase[f] || []).slice().sort((a, b) => a.posicao - b.posicao);
 
-  // Última fase: 1ª luta = final; as demais = disputa de 3º lugar
-  let ultimas = ordFase(total);
-  let lutaFinal = ultimas[0];
-  let extras = ultimas.slice(1);
+  // O motor só gera a fase seguinte quando a anterior termina, então o
+  // total de fases vem do TAMANHO DA CHAVE (nº de atletas), não das lutas
+  // existentes: 8 atletas = 3 fases (quartas, semi, final).
+  let nAtletas = (categoria.atletas || []).length || (ordFase(1).length * 2);
+  let tamanho = 2;
+  while (tamanho < nAtletas) tamanho *= 2;
+  let maiorFase = Math.max.apply(null, lutas.map(l => Number(l.fase)));
+  let total = Math.max(Math.round(Math.log2(tamanho)), maiorFase);
+
+  document.getElementById("chave").innerText = "Chave-" + Math.pow(2, total);
 
   // Quantidade de slots por rodada (metade a cada fase)
   let qtd = {};
-  qtd[total] = 1;
-  for (let f = total - 1; f >= 1; f--) {
-    qtd[f] = Math.max(qtd[f + 1] * 2, ordFase(f).length);
+  for (let f = 1; f <= total; f++) {
+    qtd[f] = Math.max(Math.pow(2, total - f), ordFase(f).length);
   }
 
-  // Numeração das lutas (como na súmula): fase a fase, disputa de 3º antes da final
-  let numero = {};
+  // Monta os slots de cada rodada
+  let rodadas = {};
+  for (let f = 1; f <= total; f++) rodadas[f] = posicionar(ordFase(f), qtd[f]);
+
+  // Numeração das lutas (como na súmula): fase a fase, na ordem da chave.
+  // Na 1ª fase, slot vazio = folga (sem número); nas seguintes, o slot
+  // vazio é uma luta ainda não gerada (recebe número mesmo assim).
+  let numeros = {};
   let n = 0;
-  for (let f = 1; f < total; f++) ordFase(f).forEach(l => { numero[l.id] = ++n; });
-  extras.forEach(l => { numero[l.id] = ++n; });
-  if (lutaFinal) numero[lutaFinal.id] = ++n;
+  for (let f = 1; f <= total; f++) {
+    numeros[f] = rodadas[f].map(l => (l || f > 1) ? ++n : null);
+  }
 
   let colunas = "";
   for (let f = 1; f <= total; f++) {
-    let lista = (f === total) ? (lutaFinal ? [lutaFinal] : []) : ordFase(f);
-    let slots = posicionar(lista, qtd[f]);
+    let slots = rodadas[f];
     let decidida = slots.map(l => !!(l && l.status === "finalizada" && l.vencedor));
 
     let htmlSlots = slots.map((l, i) => {
       let cls = "mm-slot";
-      if (!l) cls += " vazio";
+      if (!l && f === 1) cls += " vazio";
       else if (decidida[i]) cls += " ok";
       if (i % 2 === 0 && (decidida[i] || decidida[i + 1])) cls += " ent";
-      return `<div class="${cls}">${l ? cartaoLuta(l, numero[l.id]) : ""}</div>`;
+
+      let conteudo = "";
+      if (l) conteudo = cartaoLuta(l, numeros[f][i]);
+      else if (f > 1) conteudo = cartaoPrevisto(numeros[f][i]);
+
+      return `<div class="${cls}">${conteudo}</div>`;
     }).join("");
 
     colunas += `
@@ -563,13 +599,9 @@ function renderMataMata(categoria, lutas) {
     `;
   }
 
-  let bronze = extras.length
-    ? `<div class="bronze-box"><h3>Disputa de 3º lugar</h3>${extras.map(l => cartaoLuta(l, numero[l.id])).join("")}</div>`
-    : "";
-
   return `
     <div class="chave-wrap"><div class="chave">${colunas}</div></div>
-    <div class="rodape">${bronze}${painelResultado(categoria)}</div>
+    <div class="rodape">${painelResultado(categoria)}</div>
   `;
 }
 
