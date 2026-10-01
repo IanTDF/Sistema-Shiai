@@ -1,44 +1,380 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Chaveamento (somente leitura)</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+
   <style>
-    body {
-      font-family: Arial;
-      padding: 20px;
+    :root {
+      --tinta: #0f2a4d;        /* azul-marinho do título */
+      --verde: #1c7a3f;        /* números de luta e caminho do vencedor */
+      --verde-esc: #0f5128;
+      --papel: #f3f5f1;
+      --slot: #eceee9;         /* faixa cinza dos atletas */
+      --linha: #b9c2b5;        /* conectores da chave */
+      --borda: #cfd6cb;
+      --venc: #d9f1df;
+      --amarelo-a: #fdfce0;    /* aba amarela da súmula */
+      --amarelo-b: #e8e69a;
+      --card-w: 236px;
+      --con: 44px;             /* largura do conector entre colunas */
     }
 
+    body {
+      font-family: "Barlow", "Segoe UI", Arial, sans-serif;
+      background: var(--papel);
+      color: var(--tinta);
+      padding: 20px;
+      margin: 0;
+    }
+
+    h1, h2, h3 { margin-bottom: 10px; }
+
+    /* ---------- Aviso ---------- */
+    .aviso {
+      background: #fff6d6;
+      border: 1px solid #ecd98a;
+      padding: 6px 12px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 14px;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    /* ---------- Cabeçalho ---------- */
+    .cab {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+      margin-bottom: 26px;
+    }
+    .cab-nome {
+      flex: 1;
+      min-width: 0;
+      background: #fff;
+      border: 2px solid #dcdfd8;
+      padding: 14px 22px;
+      display: flex;
+      align-items: center;
+    }
+    #titulo {
+      margin: 0;
+      font-family: "Barlow Condensed", "Barlow", sans-serif;
+      font-weight: 700;
+      font-size: 32px;
+      line-height: 1.1;
+      color: var(--tinta);
+    }
+    .selo {
+      min-width: 170px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 10px 20px;
+      text-align: center;
+      background: linear-gradient(#fdfce0, #ecea9e);
+      border: 2px solid #d9d9b0;
+    }
+    #chave {
+      order: 1;
+      font-family: "Barlow Condensed", "Barlow", sans-serif;
+      font-weight: 700;
+      font-size: 36px;
+      line-height: 1;
+      color: var(--verde-esc);
+    }
+    #chave:empty { display: none; }
+    #tipo {
+      order: 2;
+      margin: 2px 0 0;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--verde-esc);
+    }
+    .selo:has(#chave:empty) #tipo {
+      font-family: "Barlow Condensed", "Barlow", sans-serif;
+      font-size: 26px;
+      margin: 0;
+    }
+
+    /* ---------- Chave (mata-mata) ---------- */
+    .chave-wrap {
+      overflow-x: auto;
+      padding: 4px 2px 18px;
+    }
+    .chave {
+      display: flex;
+      align-items: stretch;
+      width: max-content;
+      min-width: 100%;
+    }
+    .mm-rodada {
+      display: flex;
+      flex-direction: column;
+      width: calc(var(--card-w) + var(--con));
+    }
+    .mm-rodada:last-child { width: var(--card-w); }
+
+    .mm-tit {
+      height: 34px;
+      margin: 0 var(--con) 6px 0;
+      padding-bottom: 4px;
+      display: flex;
+      align-items: flex-end;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--verde-esc);
+      border-bottom: 3px solid var(--verde);
+    }
+    .mm-rodada:last-child .mm-tit { margin-right: 0; }
+
+    .mm-slots {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .mm-slot {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      min-height: 104px;
+      padding: 9px var(--con) 9px 0;
+      box-sizing: border-box;
+    }
+    .mm-rodada:last-child .mm-slot { padding-right: 0; }
+
+    /* Conectores: metade de baixo/cima do "colchete" + entrada na próxima luta */
+    .mm-rodada:not(:last-child) .mm-slot::before {
+      content: "";
+      position: absolute;
+      right: calc(var(--con) / 2);
+      width: calc(var(--con) / 2);
+      box-sizing: border-box;
+      border: 0 solid var(--linha);
+      border-right-width: 2px;
+    }
+    .mm-rodada:not(:last-child) .mm-slot:nth-child(odd)::before {
+      top: calc(50% - 1px);
+      height: calc(50% + 1px);
+      border-top-width: 2px;
+    }
+    .mm-rodada:not(:last-child) .mm-slot:nth-child(even)::before {
+      top: 0;
+      height: calc(50% + 1px);
+      border-bottom-width: 2px;
+    }
+    .mm-rodada:not(:last-child) .mm-slot:nth-child(odd)::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      top: calc(100% - 1px);
+      width: calc(var(--con) / 2);
+      border-top: 2px solid var(--linha);
+    }
+    .mm-slot.vazio::before { display: none; }
+
+    /* Caminho de quem já venceu fica verde */
+    .mm-slot.ok::before { border-color: var(--verde) !important; }
+    .mm-slot.ent::after { border-color: var(--verde) !important; }
+
+    /* ---------- Cartão da luta ---------- */
+    .mm-card {
+      display: flex;
+      width: 100%;
+      background: #fff;
+      border: 2px solid var(--borda);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .mm-card.fin { border-color: var(--verde); }
+
+    .mm-num {
+      flex: none;
+      width: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Barlow Condensed", "Barlow", sans-serif;
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--verde-esc);
+      background: linear-gradient(90deg, var(--amarelo-a), var(--amarelo-b));
+      border-right: 2px solid var(--borda);
+    }
+    .mm-card.fin .mm-num { border-right-color: var(--verde); }
+
+    .mm-corpo { flex: 1; min-width: 0; }
+
+    .mm-atl {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 32px;
+      padding: 0 10px;
+      background: var(--slot);
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .mm-atl + .mm-atl { border-top: 2px solid #fff; }
+    .mm-nome {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .mm-atl.venc {
+      background: var(--venc);
+      color: var(--verde-esc);
+      font-weight: 700;
+    }
+    .mm-atl.venc::after { content: "✔"; font-size: 14px; }
+    .mm-atl.perd { color: #7b8579; }
+    .mm-atl.vago .mm-nome {
+      color: #8a9387;
+      font-style: italic;
+      font-weight: 500;
+    }
+
+    .mm-rod {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      min-height: 22px;
+      padding: 0 10px;
+      font-size: 13px;
+      color: #5c685a;
+      background: #fff;
+    }
+    .mm-area {
+      padding: 0 8px;
+      border-radius: 9px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      background: var(--verde);
+    }
+    .mm-st { text-transform: capitalize; }
+    .mm-card.fin .mm-st { color: var(--verde-esc); font-weight: 700; }
+
+    /* ---------- Rodapé: 3º lugar + resultado ---------- */
+    .rodape {
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 28px;
+      margin-top: 8px;
+    }
+    .bronze-box { width: var(--card-w); }
+    .bronze-box h3 {
+      margin: 0 0 8px;
+      padding-bottom: 4px;
+      font-size: 17px;
+      color: var(--verde-esc);
+      border-bottom: 3px solid var(--verde);
+    }
+    .bronze-box .mm-card + .mm-card { margin-top: 10px; }
+
+    .res {
+      width: 300px;
+      background: #fff;
+      border: 2px solid #d4dccf;
+    }
+    .res h3 {
+      margin: 0;
+      padding: 8px 12px;
+      text-align: center;
+      font-size: 19px;
+      color: var(--verde-esc);
+      background: linear-gradient(#e9f7ec, #d4efdb);
+    }
+    .res-lin {
+      display: flex;
+      align-items: center;
+      min-height: 46px;
+      border-top: 2px solid #e6ebe2;
+    }
+    .res-pos {
+      width: 40px;
+      text-align: center;
+      font-family: "Barlow Condensed", "Barlow", sans-serif;
+      font-weight: 700;
+      font-size: 22px;
+      color: var(--verde-esc);
+    }
+    .res-med {
+      flex: none;
+      width: 28px;
+      height: 28px;
+      margin-right: 10px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .res-med.ouro { background: #e3b52f; }
+    .res-med.prata { background: #aab5c0; }
+    .res-med.bronze { background: #d2884a; }
+    .res-nome {
+      flex: 1;
+      min-width: 0;
+      padding-right: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .res-nome.vazio { color: #b3bbb0; font-weight: 500; }
+
+    .vazio-msg { color: #5c685a; font-size: 17px; }
+
+    /* ---------- Rodízio / Melhor de 3 (visual anterior, ainda não redesenhado) ---------- */
     .luta {
       border: 2px solid #000;
       padding: 10px;
       margin-bottom: 12px;
       border-radius: 8px;
+      background: #fff;
     }
-
     .pendente { color: #555; }
     .finalizada { color: green; font-weight: bold; }
     .cancelada { color: #999; font-style: italic; }
 
-    h1, h2, h3 { margin-bottom: 10px; }
-
-    .aviso {
-      background: #fff3cd;
-      border: 1px solid #ffe08a;
-      padding: 8px 12px;
-      border-radius: 6px;
-      display: inline-block;
-      margin-bottom: 15px;
+    @media (max-width: 640px) {
+      :root { --card-w: 210px; --con: 32px; }
+      body { padding: 12px; }
+      .cab { flex-direction: column; }
+      #titulo { font-size: 26px; }
+      .rodape { justify-content: flex-start; }
+      .res { width: 100%; }
     }
   </style>
 </head>
 <body>
 
 <div class="aviso">📺 Esta tela é apenas de visualização. Resultados são registrados na tela de Área.</div>
-<br>
 
-<h1 id="titulo"></h1>
-<h2 id="tipo"></h2>
+<header class="cab">
+  <div class="cab-nome"><h1 id="titulo"></h1></div>
+  <div class="selo">
+    <h2 id="tipo"></h2>
+    <div id="chave"></div>
+  </div>
+</header>
 
 <div id="conteudo"></div>
 
@@ -81,6 +417,162 @@ function localDaLuta(l) {
   return area ? ` — Área ${area.id}` : "";
 }
 
+// ================= MATA-MATA (visual de chave) =================
+function esc(t) {
+  return String(t == null ? "" : t)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function nomeRodada(fase, total) {
+  let d = total - fase;
+  if (d === 0) return "Final";
+  if (d === 1) return "Semifinal";
+  if (d === 2) return "Quartas de final";
+  if (d === 3) return "Oitavas de final";
+  return "Fase " + fase;
+}
+
+// Encaixa as lutas de uma rodada nos "slots" da chave (pela posição).
+// Se a posição não bater com a grade, preenche em sequência.
+function posicionar(lista, qtdSlots) {
+  let ord = lista.slice().sort((a, b) => a.posicao - b.posicao);
+  let slots = new Array(qtdSlots).fill(null);
+
+  let pos = ord.map(l => Number(l.posicao));
+  let valido = pos.every(Number.isFinite) && new Set(pos).size === pos.length;
+  if (valido && ord.length < qtdSlots) {
+    let base = Math.min.apply(null, pos) === 0 ? 0 : 1;
+    if (pos.every(p => p - base >= 0 && p - base < qtdSlots)) {
+      ord.forEach(l => { slots[Number(l.posicao) - base] = l; });
+      return slots;
+    }
+  }
+  ord.forEach((l, i) => { slots[i] = l; });
+  return slots;
+}
+
+function cartaoLuta(l, numero) {
+  let fin = l.status === "finalizada";
+
+  function linha(nome) {
+    let ehBye = typeof nome === "string" && /^bye$/i.test(nome.trim());
+    let vago = !nome || ehBye;
+    let cls = "mm-atl";
+    if (vago) cls += " vago";
+    else if (fin && l.vencedor === nome) cls += " venc";
+    else if (fin) cls += " perd";
+    let texto = !nome ? "A definir" : (ehBye ? "Folga" : nome);
+    return `<div class="${cls}"><span class="mm-nome" title="${esc(vago ? "" : nome)}">${esc(texto)}</span></div>`;
+  }
+
+  let status;
+  if (l.status === "cancelada") status = "Cancelada";
+  else if (fin) status = l.tipoVitoria || "Finalizada";
+  else status = (l.atletaA && l.atletaB) ? "Pendente" : "Aguardando atletas";
+
+  let area = getAreaDaLuta(l.id);
+
+  return `
+    <article class="mm-card${fin ? " fin" : ""}">
+      <div class="mm-num">${numero}</div>
+      <div class="mm-corpo">
+        ${linha(l.atletaA)}
+        ${linha(l.atletaB)}
+        <div class="mm-rod">
+          ${area ? `<span class="mm-area">Área ${esc(area.id)}</span>` : "<span></span>"}
+          <span class="mm-st">${esc(status)}</span>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function painelResultado(categoria) {
+  let r = (categoria.finalizada && categoria.resultadoFinal) || {};
+  let linhas = [
+    ["1", "ouro", r.campeao],
+    ["2", "prata", r.vice],
+    ["3", "bronze", r.terceiro]
+  ];
+  return `
+    <div class="res">
+      <h3>Resultado</h3>
+      ${linhas.map(x => `
+        <div class="res-lin">
+          <span class="res-pos">${x[0]}</span>
+          <span class="res-med ${x[1]}">${x[0]}</span>
+          <span class="res-nome${x[2] ? "" : " vazio"}">${x[2] ? esc(x[2]) : "—"}</span>
+        </div>`).join("")}
+    </div>
+  `;
+}
+
+function renderMataMata(categoria, lutas) {
+  if (!lutas.length) {
+    return `<p class="vazio-msg">Nenhuma luta gerada para esta categoria.</p>`;
+  }
+
+  let total = Math.max.apply(null, lutas.map(l => Number(l.fase)));
+  document.getElementById("chave").innerText = "Chave-" + Math.pow(2, total);
+
+  let porFase = {};
+  lutas.forEach(l => {
+    (porFase[l.fase] = porFase[l.fase] || []).push(l);
+  });
+  let ordFase = f => (porFase[f] || []).slice().sort((a, b) => a.posicao - b.posicao);
+
+  // Última fase: 1ª luta = final; as demais = disputa de 3º lugar
+  let ultimas = ordFase(total);
+  let lutaFinal = ultimas[0];
+  let extras = ultimas.slice(1);
+
+  // Quantidade de slots por rodada (metade a cada fase)
+  let qtd = {};
+  qtd[total] = 1;
+  for (let f = total - 1; f >= 1; f--) {
+    qtd[f] = Math.max(qtd[f + 1] * 2, ordFase(f).length);
+  }
+
+  // Numeração das lutas (como na súmula): fase a fase, disputa de 3º antes da final
+  let numero = {};
+  let n = 0;
+  for (let f = 1; f < total; f++) ordFase(f).forEach(l => { numero[l.id] = ++n; });
+  extras.forEach(l => { numero[l.id] = ++n; });
+  if (lutaFinal) numero[lutaFinal.id] = ++n;
+
+  let colunas = "";
+  for (let f = 1; f <= total; f++) {
+    let lista = (f === total) ? (lutaFinal ? [lutaFinal] : []) : ordFase(f);
+    let slots = posicionar(lista, qtd[f]);
+    let decidida = slots.map(l => !!(l && l.status === "finalizada" && l.vencedor));
+
+    let htmlSlots = slots.map((l, i) => {
+      let cls = "mm-slot";
+      if (!l) cls += " vazio";
+      else if (decidida[i]) cls += " ok";
+      if (i % 2 === 0 && (decidida[i] || decidida[i + 1])) cls += " ent";
+      return `<div class="${cls}">${l ? cartaoLuta(l, numero[l.id]) : ""}</div>`;
+    }).join("");
+
+    colunas += `
+      <section class="mm-rodada">
+        <h3 class="mm-tit">${nomeRodada(f, total)}</h3>
+        <div class="mm-slots">${htmlSlots}</div>
+      </section>
+    `;
+  }
+
+  let bronze = extras.length
+    ? `<div class="bronze-box"><h3>Disputa de 3º lugar</h3>${extras.map(l => cartaoLuta(l, numero[l.id])).join("")}</div>`
+    : "";
+
+  return `
+    <div class="chave-wrap"><div class="chave">${colunas}</div></div>
+    <div class="rodape">${bronze}${painelResultado(categoria)}</div>
+  `;
+}
+
 // ================= RENDER (somente leitura) =================
 function render() {
   let categoria = getCategoriaPorId(categoriaId);
@@ -93,8 +585,10 @@ function render() {
 
   document.getElementById("titulo").innerText = categoria.nome;
   document.getElementById("tipo").innerText = rotuloTipo(categoria.tipo);
+  document.getElementById("chave").innerText = "";
 
   let html = "";
+  let ehMataMata = categoria.tipo !== "melhorDe3" && categoria.tipo !== "rodizio";
 
   if (categoria.tipo === "melhorDe3") {
     lutas.sort((a, b) => a.fase - b.fase).forEach(l => {
@@ -140,26 +634,10 @@ function render() {
   }
 
   else { // mataMata
-    let porFase = {};
-    lutas.forEach(l => {
-      porFase[l.fase] = porFase[l.fase] || [];
-      porFase[l.fase].push(l);
-    });
-
-    Object.keys(porFase).sort((a, b) => a - b).forEach(fase => {
-      html += `<h3>Fase ${fase}</h3>`;
-      porFase[fase].sort((a, b) => a.posicao - b.posicao).forEach(l => {
-        html += `
-          <div class="luta">
-            <strong>${l.atletaA} 🆚 ${l.atletaB}</strong>${localDaLuta(l)}<br>
-            ${textoStatus(l)}
-          </div>
-        `;
-      });
-    });
+    html += renderMataMata(categoria, lutas);
   }
 
-  if (categoria.finalizada && categoria.resultadoFinal) {
+  if (!ehMataMata && categoria.finalizada && categoria.resultadoFinal) {
     let r = categoria.resultadoFinal;
     html += `<h2>🏆 1º ${r.campeao}</h2><h3>🥈 2º ${r.vice}</h3>`;
     if (r.terceiro) html += `<h3>🥉 3º ${r.terceiro}</h3>`;
