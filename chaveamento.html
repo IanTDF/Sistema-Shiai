@@ -23,6 +23,7 @@
       --amarelo-b: #e8e69a;
       --card-w: 236px;
       --con: 44px;             /* largura do conector entre colunas */
+      --rz-w: 200px;           /* largura de cada luta no rodízio */
     }
 
     body {
@@ -62,6 +63,7 @@
       padding: 6px 22px;
       display: flex;
       align-items: center;
+      justify-content: center;
     }
     #titulo {
       margin: 0;
@@ -69,6 +71,7 @@
       font-weight: 700;
       font-size: 24px;
       line-height: 1.1;
+      text-align: center;
       color: var(--tinta);
     }
     .selo {
@@ -258,6 +261,7 @@
       background: #fff;
     }
     .mm-area {
+      flex: none;
       padding: 0 8px;
       border-radius: 9px;
       font-size: 12px;
@@ -265,7 +269,13 @@
       color: #fff;
       background: var(--verde);
     }
-    .mm-st { text-transform: capitalize; }
+    .mm-st {
+      text-transform: capitalize;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .mm-card.fin .mm-st { color: var(--verde-esc); font-weight: 700; }
 
     /* ---------- Rodapé: 3º lugar + resultado ---------- */
@@ -338,13 +348,17 @@
       flex-wrap: wrap;
       gap: 8px 24px;
     }
-    .rz-rodada { width: var(--card-w); }
+    .rz-rodada { width: calc(2 * var(--rz-w) + 10px); }
     .rz-rodada .mm-tit { margin-right: 0; }
     .rz-lutas {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
     }
+    .rz-lutas.duas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rz-lutas .mm-num { width: 26px; font-size: 17px; }
+    .rz-lutas .mm-atl { height: 30px; padding: 0 7px; gap: 4px; font-size: 14px; }
+    .rz-lutas .mm-rod { padding: 0 7px; font-size: 12px; }
     .res.cl { width: 340px; }
     .cl-cab, .cl-lin {
       display: flex;
@@ -403,7 +417,9 @@
       .cab { flex-direction: column; }
       #titulo { font-size: 22px; }
       .rodape { justify-content: flex-start; }
-      .res { width: 100%; }
+      .res, .res.cl { width: 100%; }
+      .rz-rodadas { gap: 8px; }
+      .rz-rodada { width: 100%; }
     }
   </style>
 </head>
@@ -619,7 +635,7 @@ function renderRodizio(categoria, lutas) {
     return `
       <section class="rz-rodada">
         <h3 class="mm-tit">Rodada ${fase}</h3>
-        <div class="rz-lutas">${cartoes}</div>
+        <div class="rz-lutas${porRodada[fase].length <= 2 ? " duas" : ""}">${cartoes}</div>
       </section>
     `;
   }).join("");
