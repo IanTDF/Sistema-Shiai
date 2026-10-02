@@ -52,15 +52,14 @@
       display: flex;
       gap: 12px;
       align-items: stretch;
-      margin-bottom: 26px;
-      transform: scale(0.9);
+      margin-bottom: 20px;
     }
     .cab-nome {
       flex: 1;
       min-width: 0;
       background: #fff;
       border: 2px solid #dcdfd8;
-      padding: 14px 22px;
+      padding: 6px 22px;
       display: flex;
       align-items: center;
     }
@@ -68,7 +67,7 @@
       margin: 0;
       font-family: "Barlow Condensed", "Barlow", sans-serif;
       font-weight: 700;
-      font-size: 32px;
+      font-size: 24px;
       line-height: 1.1;
       color: var(--tinta);
     }
@@ -78,7 +77,7 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      padding: 10px 20px;
+      padding: 4px 20px;
       text-align: center;
       background: linear-gradient(#fdfce0, #ecea9e);
       border: 2px solid #d9d9b0;
@@ -87,21 +86,21 @@
       order: 1;
       font-family: "Barlow Condensed", "Barlow", sans-serif;
       font-weight: 700;
-      font-size: 36px;
+      font-size: 24px;
       line-height: 1;
       color: var(--verde-esc);
     }
     #chave:empty { display: none; }
     #tipo {
       order: 2;
-      margin: 2px 0 0;
-      font-size: 15px;
+      margin: 1px 0 0;
+      font-size: 13px;
       font-weight: 700;
       color: var(--verde-esc);
     }
     .selo:has(#chave:empty) #tipo {
       font-family: "Barlow Condensed", "Barlow", sans-serif;
-      font-size: 26px;
+      font-size: 20px;
       margin: 0;
     }
 
@@ -307,19 +306,11 @@
       min-height: 46px;
       border-top: 2px solid #e6ebe2;
     }
-    .res-pos {
-      width: 40px;
-      text-align: center;
-      font-family: "Barlow Condensed", "Barlow", sans-serif;
-      font-weight: 700;
-      font-size: 22px;
-      color: var(--verde-esc);
-    }
     .res-med {
       flex: none;
       width: 28px;
       height: 28px;
-      margin-right: 10px;
+      margin: 0 12px;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -331,6 +322,55 @@
     .res-med.ouro { background: #e3b52f; }
     .res-med.prata { background: #aab5c0; }
     .res-med.bronze { background: #d2884a; }
+    .res-med.neutro { background: #d5ddd1; color: var(--verde-esc); }
+
+    /* ---------- Rodízio ---------- */
+    .rz {
+      display: flex;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 32px;
+    }
+    .rz-rodadas {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 24px;
+    }
+    .rz-rodada { width: var(--card-w); }
+    .rz-rodada .mm-tit { margin-right: 0; }
+    .rz-lutas {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .res.cl { width: 340px; }
+    .cl-cab, .cl-lin {
+      display: flex;
+      align-items: center;
+    }
+    .cl-cab {
+      min-height: 28px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #5c685a;
+      background: #f3f6f1;
+    }
+    .cl-lin { min-height: 46px; border-top: 2px solid #e6ebe2; }
+    .cl-cab .cl-nome, .cl-lin .cl-nome {
+      flex: 1;
+      min-width: 0;
+      padding-right: 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .cl-lin .cl-nome { font-size: 18px; font-weight: 700; }
+    .cl-vaz { width: 52px; text-align: center; }
+    .cl-lin .cl-vaz { font-size: 18px; font-weight: 600; }
+    .cl-lin .cl-pts { font-weight: 700; color: var(--verde-esc); }
+    .cl-esp { width: 52px; flex: none; }
     .res-nome {
       flex: 1;
       min-width: 0;
@@ -345,7 +385,7 @@
 
     .vazio-msg { color: #5c685a; font-size: 17px; }
 
-    /* ---------- Rodízio / Melhor de 3 (visual anterior, ainda não redesenhado) ---------- */
+    /* ---------- Melhor de 3 (visual anterior, ainda não redesenhado) ---------- */
     .luta {
       border: 2px solid #000;
       padding: 10px;
@@ -361,7 +401,7 @@
       :root { --card-w: 210px; --con: 32px; }
       body { padding: 12px; }
       .cab { flex-direction: column; }
-      #titulo { font-size: 26px; }
+      #titulo { font-size: 22px; }
       .rodape { justify-content: flex-start; }
       .res { width: 100%; }
     }
@@ -525,10 +565,69 @@ function painelResultado(categoria) {
       <h3>Resultado</h3>
       ${linhas.map(x => `
         <div class="res-lin">
-          <span class="res-pos">${x[0]}</span>
           <span class="res-med ${x[1]}">${x[0]}</span>
           <span class="res-nome${x[2] ? "" : " vazio"}">${x[2] ? esc(x[2]) : "—"}</span>
         </div>`).join("")}
+    </div>
+  `;
+}
+
+function painelClassificacao(categoria) {
+  let ranking = Object.entries(categoria.tabela || {});
+  ranking.sort((a, b) => {
+    if (b[1].vitorias !== a[1].vitorias) return b[1].vitorias - a[1].vitorias;
+    return b[1].pontos - a[1].pontos;
+  });
+  let cores = ["ouro", "prata", "bronze"];
+
+  return `
+    <div class="res cl">
+      <h3>Classificação</h3>
+      <div class="cl-cab">
+        <span class="cl-esp"></span>
+        <span class="cl-nome">Atleta</span>
+        <span class="cl-vaz">Vitórias</span>
+        <span class="cl-vaz">Pontos</span>
+      </div>
+      ${ranking.map((r, i) => `
+        <div class="cl-lin">
+          <span class="res-med ${cores[i] || "neutro"}">${i + 1}</span>
+          <span class="cl-nome" title="${esc(r[0])}">${esc(r[0])}</span>
+          <span class="cl-vaz">${r[1].vitorias}</span>
+          <span class="cl-vaz cl-pts">${r[1].pontos}</span>
+        </div>`).join("")}
+    </div>
+  `;
+}
+
+function renderRodizio(categoria, lutas) {
+  if (!lutas.length) {
+    return `<p class="vazio-msg">Nenhuma luta gerada para esta categoria.</p>`;
+  }
+
+  let porRodada = {};
+  lutas.forEach(l => {
+    (porRodada[l.fase] = porRodada[l.fase] || []).push(l);
+  });
+
+  let n = 0;
+  let colunas = Object.keys(porRodada).sort((a, b) => a - b).map(fase => {
+    let cartoes = porRodada[fase]
+      .sort((a, b) => a.posicao - b.posicao)
+      .map(l => cartaoLuta(l, ++n))
+      .join("");
+    return `
+      <section class="rz-rodada">
+        <h3 class="mm-tit">Rodada ${fase}</h3>
+        <div class="rz-lutas">${cartoes}</div>
+      </section>
+    `;
+  }).join("");
+
+  return `
+    <div class="rz">
+      <div class="rz-rodadas">${colunas}</div>
+      ${painelClassificacao(categoria)}
     </div>
   `;
 }
@@ -636,41 +735,14 @@ function render() {
   }
 
   else if (categoria.tipo === "rodizio") {
-    let porRodada = {};
-    lutas.forEach(l => {
-      porRodada[l.fase] = porRodada[l.fase] || [];
-      porRodada[l.fase].push(l);
-    });
-
-    Object.keys(porRodada).sort((a, b) => a - b).forEach(fase => {
-      html += `<h3>Rodada ${fase}</h3>`;
-      porRodada[fase].sort((a, b) => a.posicao - b.posicao).forEach(l => {
-        html += `
-          <div class="luta">
-            <strong>${l.atletaA} 🆚 ${l.atletaB}</strong>${localDaLuta(l)}<br>
-            ${textoStatus(l)}
-          </div>
-        `;
-      });
-    });
-
-    let ranking = Object.entries(categoria.tabela || {});
-    ranking.sort((a, b) => {
-      if (b[1].vitorias !== a[1].vitorias) return b[1].vitorias - a[1].vitorias;
-      return b[1].pontos - a[1].pontos;
-    });
-
-    html += "<h3>🏆 Classificação</h3>";
-    ranking.forEach((r, i) => {
-      html += `<p>${i + 1}º ${r[0]} - ${r[1].vitorias} vitórias - ${r[1].pontos} pts</p>`;
-    });
+    html += renderRodizio(categoria, lutas);
   }
 
   else { // mataMata
     html += renderMataMata(categoria, lutas);
   }
 
-  if (!ehMataMata && categoria.finalizada && categoria.resultadoFinal) {
+  if (categoria.tipo === "melhorDe3" && categoria.finalizada && categoria.resultadoFinal) {
     let r = categoria.resultadoFinal;
     html += `<h2>🏆 1º ${r.campeao}</h2><h3>🥈 2º ${r.vice}</h3>`;
     if (r.terceiro) html += `<h3>🥉 3º ${r.terceiro}</h3>`;
