@@ -359,6 +359,13 @@
     .rz-lutas .mm-num { width: 26px; font-size: 17px; }
     .rz-lutas .mm-atl { height: 30px; padding: 0 7px; gap: 4px; font-size: 14px; }
     .rz-lutas .mm-rod { padding: 0 7px; font-size: 12px; }
+    .mb3-rodada { width: var(--card-w); }
+    .mb3-rodada .mm-tit { margin-right: 0; }
+    .rz-lado { display: flex; flex-direction: column; gap: 20px; }
+    .cl-esp.p { width: 14px; }
+    .cl-lin.lider { background: var(--venc); }
+    .cl-lin.lider .cl-nome { color: var(--verde-esc); }
+    .mm-card.canc { opacity: .55; border-style: dashed; }
     .res.cl { width: 340px; }
     .cl-cab, .cl-lin {
       display: flex;
@@ -399,18 +406,6 @@
 
     .vazio-msg { color: #5c685a; font-size: 17px; }
 
-    /* ---------- Melhor de 3 (visual anterior, ainda não redesenhado) ---------- */
-    .luta {
-      border: 2px solid #000;
-      padding: 10px;
-      margin-bottom: 12px;
-      border-radius: 8px;
-      background: #fff;
-    }
-    .pendente { color: #555; }
-    .finalizada { color: green; font-weight: bold; }
-    .cancelada { color: #999; font-style: italic; }
-
     @media (max-width: 640px) {
       :root { --card-w: 210px; --con: 32px; }
       body { padding: 12px; }
@@ -419,7 +414,8 @@
       .rodape { justify-content: flex-start; }
       .res, .res.cl { width: 100%; }
       .rz-rodadas { gap: 8px; }
-      .rz-rodada { width: 100%; }
+      .rz-rodada, .mb3-rodada { width: 100%; }
+      .rz-lado { width: 100%; }
     }
   </style>
 </head>
@@ -534,7 +530,7 @@ function cartaoLuta(l, numero) {
   let area = getAreaDaLuta(l.id);
 
   return `
-    <article class="mm-card${fin ? " fin" : ""}">
+    <article class="mm-card${fin ? " fin" : ""}${l.status === "cancelada" ? " canc" : ""}">
       <div class="mm-num">${numero}</div>
       <div class="mm-corpo">
         ${linha(l.atletaA)}
@@ -562,7 +558,7 @@ function cartaoPrevisto(numero) {
   `;
 }
 
-function painelResultado(categoria) {
+function painelResultado(categoria, qtdLinhas) {
   let r = (categoria.finalizada && categoria.resultadoFinal) || {};
   // O motor guarda os dois bronzes juntos em "terceiro", separados por " / "
   let terceiros = String(r.terceiro || "")
@@ -579,7 +575,7 @@ function painelResultado(categoria) {
   return `
     <div class="res">
       <h3>Resultado</h3>
-      ${linhas.map(x => `
+      ${linhas.slice(0, qtdLinhas || 4).map(x => `
         <div class="res-lin">
           <span class="res-med ${x[1]}">${x[0]}</span>
           <span class="res-nome${x[2] ? "" : " vazio"}">${x[2] ? esc(x[2]) : "—"}</span>
@@ -644,6 +640,52 @@ function renderRodizio(categoria, lutas) {
     <div class="rz">
       <div class="rz-rodadas">${colunas}</div>
       ${painelClassificacao(categoria)}
+    </div>
+  `;
+}
+
+function renderMelhorDe3(categoria, lutas) {
+  if (!lutas.length) {
+    return `<p class="vazio-msg">Nenhuma luta gerada para esta categoria.</p>`;
+  }
+
+  let ord = lutas.slice().sort((a, b) => a.fase - b.fase);
+
+  let colunas = ord.map(l => `
+    <section class="mb3-rodada">
+      <h3 class="mm-tit">Luta ${l.fase}</h3>
+      ${cartaoLuta(l, l.fase)}
+    </section>
+  `).join("");
+
+  // Placar da série (vitórias de cada atleta)
+  let atletas = (categoria.atletas && categoria.atletas.length === 2)
+    ? categoria.atletas
+    : [ord[0].atletaA, ord[0].atletaB];
+  let vit = atletas.map(a =>
+    ord.filter(l => l.status === "finalizada" && l.vencedor === a).length
+  );
+  let placar = `
+    <div class="res">
+      <h3>Placar da série</h3>
+      <div class="cl-cab">
+        <span class="cl-esp p"></span>
+        <span class="cl-nome">Atleta</span>
+        <span class="cl-vaz">Vitórias</span>
+      </div>
+      ${atletas.map((a, i) => `
+        <div class="cl-lin${vit[i] > vit[1 - i] ? " lider" : ""}">
+          <span class="cl-esp p"></span>
+          <span class="cl-nome" title="${esc(a)}">${esc(a)}</span>
+          <span class="cl-vaz cl-pts">${vit[i]}</span>
+        </div>`).join("")}
+    </div>
+  `;
+
+  return `
+    <div class="rz">
+      <div class="rz-rodadas">${colunas}</div>
+      <div class="rz-lado">${placar}${painelResultado(categoria, 2)}</div>
     </div>
   `;
 }
@@ -736,18 +778,9 @@ function render() {
   document.getElementById("chave").innerText = "";
 
   let html = "";
-  let ehMataMata = categoria.tipo !== "melhorDe3" && categoria.tipo !== "rodizio";
 
   if (categoria.tipo === "melhorDe3") {
-    lutas.sort((a, b) => a.fase - b.fase).forEach(l => {
-      html += `
-        <div class="luta">
-          <h3>Luta ${l.fase}</h3>
-          <strong>${l.atletaA} 🆚 ${l.atletaB}</strong>${localDaLuta(l)}<br>
-          ${textoStatus(l)}
-        </div>
-      `;
-    });
+    html += renderMelhorDe3(categoria, lutas);
   }
 
   else if (categoria.tipo === "rodizio") {
@@ -756,12 +789,6 @@ function render() {
 
   else { // mataMata
     html += renderMataMata(categoria, lutas);
-  }
-
-  if (categoria.tipo === "melhorDe3" && categoria.finalizada && categoria.resultadoFinal) {
-    let r = categoria.resultadoFinal;
-    html += `<h2>🏆 1º ${r.campeao}</h2><h3>🥈 2º ${r.vice}</h3>`;
-    if (r.terceiro) html += `<h3>🥉 3º ${r.terceiro}</h3>`;
   }
 
   document.getElementById("conteudo").innerHTML = html;
