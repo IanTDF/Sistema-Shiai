@@ -60,6 +60,15 @@
   button:hover {
    opacity: 0.85;
   }
+  
+    .btn-editar {
+    width: auto;
+    margin-top: 8px;
+    padding: 6px 12px;
+    background: #fff3cd;
+    color: #555;
+    font-size: 13px;
+  }
 
   .finalizada {
     color: green;
@@ -116,6 +125,17 @@ function registrar(idLuta, vencedor, tipoVitoria) {
   atualizarResultado(idLuta, vencedor, tipoVitoria);
   render();
 }
+function editarResultado(idLuta) {
+  if (!confirm("Editar o resultado desta luta?\nO resultado atual será apagado e você escolherá o novo.")) return;
+
+  let r = corrigirResultado(idLuta);   // vem do judo-store.js
+
+  if (!r.ok) {
+    alert(r.motivo);
+    return;
+  }
+  render();   // a luta volta pendente e os botões de resultado reaparecem
+}
 
 // ================= RENDER =================
 function render() {
@@ -136,10 +156,14 @@ function render() {
     let cabecalho = `${nomeCategoria} — ${rotuloTipo(l.tipo)} — ${faseLabel}`;
     let corpo = "";
 
-    if (l.status === "finalizada") {
+        if (l.status === "finalizada") {
       let tipoTexto = l.tipoVitoria ? ` (${l.tipoVitoria})` : "";
-      corpo = `<span class="finalizada">✔ Vencedor: ${l.vencedor}${tipoTexto}</span>`;
+      corpo = `
+        <span class="finalizada">✔ Vencedor: ${l.vencedor}${tipoTexto}</span><br>
+        <button class="btn-editar" onclick="editarResultado(${l.id})">✏️ Editar resultado</button>
+      `;
     }
+
     else if (l.status === "cancelada") {
       corpo = `<span class="cancelada">Cancelada (série já decidida)</span>`;
     }
