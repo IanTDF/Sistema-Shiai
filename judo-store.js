@@ -650,3 +650,123 @@ let terceiro = terceiros.join(" / ");
 
   return getLutaPorId(idLuta);
 }
+// ============================================================
+// ✏️ CORREÇÃO DE RESULTADO
+//
+// Desfaz o efeito de uma luta finalizada e a devolve ao estado
+// "pendente". O NOVO resultado deve ser registrado depois, pelo
+// atualizarResultado() de sempre, que refaz pontuação e avanço.
+//
+// Retorna { ok: true } ou { ok: false, motivo: "..." }.
+// ============================================================
+function corrigirResultado(idLuta) {
+  let lutas = getLutas();
+  let luta = lutas.find(l => l.id === idLuta);
+
+  if (!luta) return { ok: false, motivo: "Luta não encontrada." };
+  if (luta.status !== "finalizada") {
+    return { ok: false, motivo: "Só é possível corrigir lutas finalizadas." };
+  }
+
+  // guarda o resultado antigo ANTES de limpar (o rodízio precisa dele)
+  let vencedorAntigo = luta.vencedor;
+  let tipoVitoriaAntigo = luta.tipoVitoria;
+
+  // ---------- validação (mata-mata): fase seguinte já tem resultado? ----------
+  let seguintes = [];
+  if (luta.tipo === "mataMata") {
+    seguintes = lutas.filter(l =>
+      l.categoriaId === luta.categoriaId &&
+      l.tipo === "mataMata" &&
+      l.fase === luta.fase + 1
+    );
+    if (seguintes.some(l => l.status === "finalizada")) {
+      return {
+        ok: false,
+        motivo: "A fase seguinte já tem resultado registrado. " +
+                "Corrija primeiro a luta da fase seguinte."
+      };
+    }
+  }
+
+  let categorias = getCategorias();
+  let categoria = categorias.find(c => c.id === luta.categoriaId);
+  let mudouCategorias = false;
+
+  // ---------- reset da luta ----------
+  luta.vencedor = null;
+  luta.tipoVitoria = null;
+  luta.status = "pendente";
+
+  // ---------- RODÍZIO: desfaz a pontuação (mesma regra de pontos do motor) ----------
+  if (luta.tipo === "rodizio") {
+    if (categoria && categoria.tabela && categoria.tabela[vencedorAntigo]) {
+      categoria.tabela[vencedorAntigo].pontos -= pontosPorTipo(tipoVitoriaAntigo);
+      categoria.tabela[vencedorAntigo].vitorias -= 1;
+      mudouCategorias = true;
+    }
+  }
+
+  // ---------- MELHOR DE 3: reabre a série se ela deixou de estar decidida ----------
+  else if (luta.tipo === "melhorDe3" && categoria) {
+    let serie = lutas.filter(l =>
+      l.categoriaId === categoria.id && l.tipo === "melhorDe3"
+    );
+
+    let vitorias = {};
+    serie.forEach(l => {
+      if (l.status === "finalizada" && l.vencedor) {
+        vitorias[l.vencedor] = (vitorias[l.vencedor] || 0) + 1;
+      }
+    });
+
+    let aindaDecidida = Object.values(vitorias).some(v => v >= 2);
+
+    if (!aindaDecidida) {
+      // a luta que tinha sido cancelada volta a ser jogável
+      serie.forEach(l => { if (l.status === "cancelada") l.status = "pendente"; });
+
+      if (categoria.finalizada) {
+        categoria.finalizada = false;
+        categoria.resultadoFinal = null;
+        mudouCategorias = true;
+      }
+    }
+  }
+
+  // ---------- MATA-MATA: remove a fase seguinte (será gerada de novo) ----------
+  else if (luta.tipo === "mataMata") {
+    let idsSeguintes = new Set(seguintes.map(l => l.id));
+
+    if (idsSeguintes.size) {
+      // some das lutas...
+      lutas = lutas.filter(l => !idsSeguintes.has(l.id));
+      lutas.forEach(l => {
+        if (idsSeguintes.has(l.proximaLutaId)) l.proximaLutaId = null;
+      });
+
+      // ...e das filas das áreas
+      let areas = getAreas();
+      let mexeuAreas = false;
+      areas.forEach(a => {
+        let antes = a.lutas.length;
+        a.lutas = a.lutas.filter(id => !idsSeguintes.has(id));
+        if (a.lutas.length !== antes) mexeuAreas = true;
+      });
+      if (mexeuAreas) saveAreas(areas);
+    }
+
+    // se era a final, a categoria deixa de estar finalizada
+    if (categoria && categoria.finalizada) {
+      categoria.finalizada = false;
+      categoria.resultadoFinal = null;
+      mudouCategorias = true;
+    }
+  }
+
+  saveLutas(lutas);
+  if (mudouCategorias) saveCategorias(categorias);
+
+  return { ok: true };
+}
+
