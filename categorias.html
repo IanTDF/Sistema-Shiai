@@ -1,34 +1,185 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Categorias</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --tinta: #0f2a4d;
+      --verde: #1c7a3f;
+      --verde-esc: #0f5128;
+      --papel: #f3f5f1;
+      --borda: #cfd6cb;
+      --cinza: #5c685a;
+      --perigo: #b3261e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 20px;
+      background: var(--papel);
+      color: var(--tinta);
+      font-family: "Barlow", "Segoe UI", Arial, sans-serif;
+    }
+
+    /* ---------- Cabeçalho ---------- */
+    .topo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    h1 {
+      margin: 0;
+      font-family: "Barlow Condensed", "Barlow", sans-serif;
+      font-size: 32px;
+      line-height: 1.1;
+    }
+    .sub { margin: 2px 0 0; font-size: 15px; color: var(--cinza); }
+
+    /* ---------- Painéis ---------- */
+    .painel {
+      margin-bottom: 18px;
+      padding: 16px 18px 18px;
+      background: #fff;
+      border: 2px solid var(--borda);
+      border-radius: 6px;
+    }
+    .painel h2 {
+      margin: 0 0 14px;
+      padding-bottom: 4px;
+      font-size: 20px;
+      color: var(--verde-esc);
+      border-bottom: 3px solid var(--verde);
+    }
+
+    /* ---------- Formulário ---------- */
+    label {
+      display: block;
+      margin: 0 0 4px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    input, textarea {
+      width: 100%;
+      margin-bottom: 12px;
+      padding: 9px 12px;
+      background: #fff;
+      border: 2px solid var(--borda);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 16px;
+      color: var(--tinta);
+    }
+    input:focus, textarea:focus { outline: none; border-color: var(--tinta); }
+    textarea { resize: vertical; }
+    #nomeCategoria, #listaAtletas { max-width: 460px; }
+
+    .linha { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .linha input { width: 200px; margin-bottom: 0; }
+
+    /* ---------- Botões ---------- */
+    .btn {
+      padding: 10px 16px;
+      border: 2px solid var(--tinta);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn.prim { background: var(--tinta); color: #fff; }
+    .btn.prim:hover { background: #17407a; }
+    .btn.sec { background: #fff; color: var(--tinta); }
+    .btn.sec:hover { background: #eef1f6; }
+    .btn.perigo { background: #fff; color: var(--perigo); border-color: var(--perigo); }
+    .btn.perigo:hover { background: #fdeceb; }
+    .btn:focus-visible { outline: 3px solid #e0a800; outline-offset: 2px; }
+
+    /* ---------- Cartões (categorias e áreas) ---------- */
+    .grade {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      --cor: var(--tinta);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 12px 14px;
+      background: #fff;
+      border: 2px solid var(--borda);
+      border-left: 8px solid var(--cor);
+      border-radius: 6px;
+    }
+    .card.area { --cor: var(--verde); }
+    .card .nome { margin: 0; font-size: 19px; line-height: 1.2; overflow-wrap: anywhere; }
+    .card .meta { margin: 0 0 6px; font-size: 15px; color: var(--cinza); }
+    .card .btn { margin-top: auto; }
+
+    .vazio, #lista:empty::before {
+      grid-column: 1 / -1;
+      margin: 0;
+      font-size: 17px;
+      color: var(--cinza);
+    }
+    #lista:empty::before { content: "Nenhuma categoria cadastrada ainda."; }
+
+    @media (max-width: 640px) {
+      body { padding: 12px; }
+      h1 { font-size: 26px; }
+      .grade { grid-template-columns: minmax(0, 1fr); }
+      .linha input { width: 100%; }
+    }
+  </style>
 </head>
 <body>
 
-<h1>Categorias</h1>
+<header class="topo">
+  <div>
+    <h1>Painel administrativo</h1>
+    <p class="sub">Cadastre as categorias, configure as áreas e distribua as lutas.</p>
+  </div>
+  <button class="btn perigo" onclick="resetarSistema()">Resetar campeonato</button>
+</header>
 
-<button onclick="resetarSistema()">🔴 Resetar Campeonato</button>
+<section class="painel">
+  <h2>Nova categoria</h2>
 
-<input id="nomeCategoria" placeholder="Nome da categoria">
-<br><br>
+  <label for="nomeCategoria">Nome da categoria</label>
+  <input id="nomeCategoria" placeholder="Nome da categoria">
 
-<textarea id="listaAtletas" rows="6" cols="30" placeholder="Um atleta por linha"></textarea>
-<br><br>
+  <label for="listaAtletas">Atletas (um por linha)</label>
+  <textarea id="listaAtletas" rows="6" placeholder="Um atleta por linha"></textarea>
 
-<button onclick="adicionar()">Adicionar</button>
+  <button class="btn prim" onclick="adicionar()">Adicionar categoria</button>
+</section>
 
-<hr>
+<section class="painel">
+  <h2>Áreas (tatames)</h2>
 
-<h2>Áreas (Tatames)</h2>
-<input id="qtdAreas" type="number" min="1" placeholder="Quantidade de áreas" style="width:180px;">
-<button onclick="configurarQtdAreas()">Configurar áreas</button>
-<button onclick="acaoDistribuirCampeonato()">🥋 Distribuir Campeonato</button>
+  <div class="linha">
+    <input id="qtdAreas" type="number" min="1" placeholder="Quantidade de áreas" aria-label="Quantidade de áreas">
+    <button class="btn sec" onclick="configurarQtdAreas()">Configurar áreas</button>
+    <button class="btn prim" onclick="acaoDistribuirCampeonato()">🥋 Distribuir campeonato</button>
+  </div>
 
-<div id="listaAreas"></div>
+  <div id="listaAreas" class="grade"></div>
+</section>
 
-<hr>
-
-<div id="lista"></div>
+<section class="painel">
+  <h2>Categorias</h2>
+  <div id="lista" class="grade"></div>
+</section>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -93,11 +244,11 @@ function render() {
 
   categorias.forEach((c, i) => {
     html += `
-      <div style="border:1px solid black; margin:10px; padding:10px;">
-        <strong>${c.nome}</strong><br>
-        ${c.atletas.length} atletas<br>
-        <button onclick="abrir(${i})">Abrir (somente leitura)</button>
-      </div>
+      <article class="card cat">
+        <h3 class="nome">${c.nome}</h3>
+        <p class="meta">${c.atletas.length} atletas</p>
+        <button class="btn sec" onclick="abrir(${i})">Abrir (somente leitura)</button>
+      </article>
     `;
   });
 
@@ -143,15 +294,15 @@ function renderAreas() {
 
   areas.forEach(a => {
     html += `
-      <div style="border:1px solid #555; margin:10px; padding:10px;">
-        <strong>Área ${a.id}</strong><br>
-        ${a.lutas.length} luta(s) na fila<br>
-        <button onclick="abrirArea(${a.id})">Abrir área</button>
-      </div>
+      <article class="card area">
+        <h3 class="nome">Área ${a.id}</h3>
+        <p class="meta">${a.lutas.length} luta(s) na fila</p>
+        <button class="btn sec" onclick="abrirArea(${a.id})">Abrir área</button>
+      </article>
     `;
   });
 
-  document.getElementById("listaAreas").innerHTML = html || "<p>Nenhuma área configurada ainda.</p>";
+  document.getElementById("listaAreas").innerHTML = html || "<p class='vazio'>Nenhuma área configurada ainda.</p>";
 }
 
 function abrirArea(id) {
