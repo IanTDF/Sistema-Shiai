@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acompanhamento das chaves</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --tinta: #0f2a4d;
+      --verde: #1c7a3f;
+      --verde-esc: #0f5128;
+      --papel: #f3f5f1;
+      --borda: #cfd6cb;
+      --cinza: #5c685a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 20px;
+      background: var(--papel);
+      color: var(--tinta);
+      font-family: "Barlow", "Segoe UI", Arial, sans-serif;
+    }
+
+    .topo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    h1 {
+      margin: 0;
+      font-family: "Barlow Condensed", "Barlow", sans-serif;
+      font-size: 32px;
+      line-height: 1.1;
+    }
+    .sub { margin: 2px 0 0; font-size: 15px; color: var(--cinza); }
+
+    .live {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: #fff;
+      border: 2px solid var(--borda);
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--verde-esc);
+    }
+    .live small { font-weight: 500; color: var(--cinza); }
+    .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #2fb45a;
+      animation: pisca 1.8s ease-in-out infinite;
+    }
+    @keyframes pisca { 50% { opacity: .25; } }
+    @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+
+    /* ---------- Filtros / resumo ---------- */
+    .resumo { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+    .chip {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 8px 16px;
+      background: #fff;
+      border: 2px solid var(--borda);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--tinta);
+      cursor: pointer;
+    }
+    .chip b { font-family: "Barlow Condensed", "Barlow", sans-serif; font-size: 24px; line-height: 1; }
+    .chip.on { background: var(--tinta); border-color: var(--tinta); color: #fff; }
+    .chip:focus-visible, .abrir:focus-visible { outline: 3px solid #e0a800; outline-offset: 2px; }
+
+    /* ---------- Cartões ---------- */
+    .lista {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .card {
+      --cor: #9aa397;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 14px 16px;
+      background: #fff;
+      border: 2px solid var(--borda);
+      border-left: 8px solid var(--cor);
+      border-radius: 6px;
+    }
+    .card.and { --cor: #e0a800; }
+    .card.fin { --cor: var(--verde); }
+
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .nome { margin: 0; font-size: 20px; line-height: 1.2; overflow-wrap: anywhere; }
+
+    .badge {
+      flex: none;
+      padding: 2px 10px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      background: #e6e9e3;
+      color: #4a5448;
+    }
+    .badge.and { background: #fff1c2; color: #7a5a00; }
+    .badge.fin { background: #d9f1df; color: var(--verde-esc); }
+
+    .meta { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 15px; font-weight: 600; }
+    .prog { font-size: 14px; color: var(--cinza); }
+
+    /* ---------- Classificação final ---------- */
+    .pod { border: 2px solid #cfe8d6; border-radius: 6px; overflow: hidden; }
+    .pod-t {
+      padding: 6px 12px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--verde-esc);
+      background: linear-gradient(#e9f7ec, #d4efdb);
+    }
+    .pod-lin {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-top: 1px solid #d4efdb;
+      font-size: 17px;
+    }
+    .pod-lin .med { font-size: 20px; }
+    .pod-lin .pn { width: 22px; font-weight: 700; color: var(--verde-esc); }
+    .pod-lin .nm { flex: 1; min-width: 0; font-weight: 700; overflow-wrap: anywhere; }
+    .pod-lin .det { font-size: 13px; color: var(--cinza); }
+
+    .abrir {
+      display: block;
+      margin-top: auto;
+      padding: 10px;
+      text-align: center;
+      text-decoration: none;
+      font-weight: 700;
+      color: #fff;
+      background: var(--tinta);
+      border-radius: 6px;
+    }
+    .abrir:hover { background: #17407a; }
+
+    .vazio { padding: 24px 0; font-size: 18px; color: var(--cinza); }
+
+    @media (max-width: 640px) {
+      body { padding: 12px; }
+      h1 { font-size: 26px; }
+      .lista { grid-template-columns: minmax(0, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<header class="topo">
+  <div>
+    <h1>Acompanhamento das chaves</h1>
+    <p class="sub">Somente visualização. A página atualiza sozinha.</p>
+  </div>
+  <div class="live"><span class="dot"></span>Ao vivo <small id="hora"></small></div>
+</header>
+
+<section class="resumo" id="resumo"></section>
+<section class="lista" id="lista"></section>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="judo-store.js"></script>
+<script>
+// ============================================================
+// chaves.html — SOMENTE LEITURA.
+// Usa apenas getCategorias(), getLutas(), iniciarStore() e
+// onStoreUpdate() do judo-store.js. Nenhuma função de escrita
+// (atualizarResultado, corrigirResultado, distribuir..., etc.)
+// é chamada aqui.
+// ============================================================
+const ROTULOS = { melhorDe3: "Melhor de 3", rodizio: "Rodízio", mataMata: "Mata-mata" };
+const STATUS = {
+  "nao-iniciada": { txt: "Não iniciada", cls: "nao" },
+  "andamento":    { txt: "Em andamento", cls: "and" },
+  "finalizada":   { txt: "Finalizada",   cls: "fin" }
+};
+const MEDALHAS = ["", "🥇", "🥈", "🥉"];
+let filtro = "todas";
+
+function esc(t) {
+  return String(t == null ? "" : t)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+// O motor marca categoria.finalizada no mata-mata e no melhor de 3.
+// No rodízio ele só pontua, então aqui a categoria é considerada
+// finalizada quando todas as lutas já foram realizadas.
+function statusCategoria(c, lutas) {
+  if (c.finalizada) return "finalizada";
+  if (c.tipo === "rodizio" && lutas.length && lutas.every(l => l.status === "finalizada")) {
+    return "finalizada";
+  }
+  if (lutas.some(l => l.status === "finalizada")) return "andamento";
+  return "nao-iniciada";
+}
+
+// Mesma regra de classificação usada no chaveamento.html
+function podio(c) {
+  if (c.tipo === "rodizio") {
+    let ranking = Object.entries(c.tabela || {}).sort((a, b) => {
+      if (b[1].vitorias !== a[1].vitorias) return b[1].vitorias - a[1].vitorias;
+      return b[1].pontos - a[1].pontos;
+    });
+    return ranking.slice(0, 3).map((r, i) => ({
+      pos: i + 1, nome: r[0], det: r[1].vitorias + " vit. e " + r[1].pontos + " pts"
+    }));
+  }
+
+  let r = c.resultadoFinal || {};
+  let linhas = [{ pos: 1, nome: r.campeao }, { pos: 2, nome: r.vice }];
+  String(r.terceiro || "").split(" / ")
+    .map(t => t.trim())
+    .filter(t => t && !/^bye$/i.test(t))
+    .forEach(t => linhas.push({ pos: 3, nome: t }));
+  return linhas.filter(x => x.nome);
+}
+
+function htmlPodio(c) {
+  let linhas = podio(c);
+  if (!linhas.length) return "";
+  return `
+    <div class="pod">
+      <div class="pod-t">Classificação final</div>
+      ${linhas.map(x => `
+        <div class="pod-lin">
+          <span class="med">${MEDALHAS[x.pos]}</span>
+          <span class="pn">${x.pos}º</span>
+          <span class="nm">${esc(x.nome)}</span>
+          ${x.det ? `<span class="det">${esc(x.det)}</span>` : ""}
+        </div>`).join("")}
+    </div>`;
+}
+
+function textoLutas(c, lutas) {
+  let feitas = lutas.filter(l => l.status === "finalizada").length;
+  if (c.tipo === "mataMata") return feitas + " luta(s) realizada(s)";
+  let total = lutas.filter(l => l.status !== "cancelada").length;
+  return feitas + " de " + total + " lutas realizadas";
+}
+
+function setFiltro(f) { filtro = f; render(); }
+
+function render() {
+  let categorias = getCategorias();
+  let todas = getLutas();               // lido uma vez só
+  let porCat = {};
+  todas.forEach(l => { (porCat[l.categoriaId] = porCat[l.categoriaId] || []).push(l); });
+
+  let itens = categorias.map(c => {
+    let lutas = porCat[c.id] || [];
+    return { c, lutas, st: statusCategoria(c, lutas) };
+  });
+
+  let cont = { "todas": itens.length, "andamento": 0, "finalizada": 0, "nao-iniciada": 0 };
+  itens.forEach(i => cont[i.st]++);
+
+  let chips = [
+    ["todas", "Todas"], ["andamento", "Em andamento"],
+    ["finalizada", "Finalizadas"], ["nao-iniciada", "Não iniciadas"]
+  ];
+  document.getElementById("resumo").innerHTML = chips.map(([k, t]) =>
+    `<button class="chip${filtro === k ? " on" : ""}" onclick="setFiltro('${k}')"><b>${cont[k]}</b>${t}</button>`
+  ).join("");
+
+  let visiveis = itens.filter(i => filtro === "todas" || i.st === filtro);
+
+  let html = visiveis.map(({ c, lutas, st }) => {
+    let s = STATUS[st];
+    let n = (c.atletas || []).length;
+    return `
+      <article class="card ${s.cls}">
+        <div class="card-top">
+          <h2 class="nome">${esc(c.nome)}</h2>
+          <span class="badge ${s.cls}">${s.txt}</span>
+        </div>
+        <div class="meta">
+          <span>👥 ${n} atleta(s)</span>
+          <span>🥋 ${esc(ROTULOS[c.tipo] || "Chaveamento")}</span>
+        </div>
+        <div class="prog">${textoLutas(c, lutas)}</div>
+        ${st === "finalizada" ? htmlPodio(c) : ""}
+        <a class="abrir" href="chaveamento.html?categoria=${c.id}" target="_blank" rel="noopener">Abrir chave</a>
+      </article>`;
+  }).join("");
+
+  if (!html) {
+    html = `<p class="vazio">${itens.length
+      ? "Nenhuma categoria neste filtro."
+      : "Nenhuma categoria cadastrada ainda."}</p>`;
+  }
+
+  document.getElementById("lista").innerHTML = html;
+  document.getElementById("hora").textContent = new Date().toLocaleTimeString("pt-BR");
+}
+
+// Espera os dados do Firebase e redesenha a cada mudança, de qualquer aparelho
+iniciarStore().then(() => {
+  render();
+  onStoreUpdate(() => render());
+});
+</script>
+
+</body>
+</html>
