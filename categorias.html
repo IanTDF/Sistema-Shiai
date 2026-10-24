@@ -125,6 +125,8 @@
     .card .nome { margin: 0; font-size: 19px; line-height: 1.2; overflow-wrap: anywhere; }
     .card .meta { margin: 0 0 6px; font-size: 15px; color: var(--cinza); }
     .card .btn { margin-top: auto; }
+    .card .acoes { display: flex; gap: 8px; }
+    .card .acoes .btn { flex: 1; margin-top: 0; }
 
     .vazio, #lista:empty::before {
       grid-column: 1 / -1;
@@ -153,7 +155,7 @@
 </header>
 
 <section class="painel">
-  <h2>Nova categoria</h2>
+  <h2 id="tituloForm">Nova categoria</h2>
 
   <label for="nomeCategoria">Nome da categoria</label>
   <input id="nomeCategoria" placeholder="Nome da categoria">
@@ -161,7 +163,9 @@
   <label for="listaAtletas">Atletas (um por linha)</label>
   <textarea id="listaAtletas" rows="6" placeholder="Um atleta por linha"></textarea>
 
-  <button class="btn prim" onclick="adicionar()">Adicionar categoria</button>
+  <button class="btn prim" id="btnAdicionar" onclick="adicionar()">Adicionar categoria</button>
+  <button class="btn prim" id="btnSalvar" onclick="salvarEdicao()" hidden>Salvar alterações</button>
+  <button class="btn sec" id="btnCancelar" onclick="cancelarEdicao()" hidden>Cancelar edição</button>
 </section>
 
 <section class="painel">
@@ -217,6 +221,89 @@ function adicionar() {
   render();
 }
 
+// ================= EDITAR / EXCLUIR CATEGORIA =================
+// Toda a regra fica no judo-store.js (editarCategoria, excluirCategoria,
+// categoriaIniciada). Esta tela só pede e mostra o resultado.
+
+let editandoId = null;   // id da categoria em edição (null = modo "nova categoria")
+
+function modoEdicao(editando) {
+  document.getElementById("btnAdicionar").hidden = editando;
+  document.getElementById("btnSalvar").hidden = !editando;
+  document.getElementById("btnCancelar").hidden = !editando;
+
+  if (!editando) {
+    editandoId = null;
+    document.getElementById("tituloForm").textContent = "Nova categoria";
+    document.getElementById("nomeCategoria").value = "";
+    document.getElementById("listaAtletas").value = "";
+  }
+}
+
+function cancelarEdicao() { modoEdicao(false); }
+
+function atualizarTela() {
+  categorias = getCategorias();
+  render();
+  renderAreas();
+}
+
+function editar(id) {
+  let c = categorias.find(x => x.id === id);
+  if (!c) return;
+
+  editandoId = id;
+  document.getElementById("nomeCategoria").value = c.nome;
+  document.getElementById("listaAtletas").value = c.atletas.join("\n");
+  document.getElementById("tituloForm").textContent = "Editar categoria: " + c.nome;
+  modoEdicao(true);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function salvarEdicao() {
+  let nome = document.getElementById("nomeCategoria").value;
+  let atletas = document.getElementById("listaAtletas").value
+    .split("\n").filter(n => n.trim() !== "");
+
+  if (!nome || atletas.length === 0) return alert("Preencha tudo");
+
+  let r = editarCategoria(editandoId, nome, atletas);   // judo-store.js
+  if (!r.ok) return alert(r.motivo);
+
+  let aviso = "Categoria atualizada.";
+  if (r.regenerou) {
+    aviso += "\nOs combates dela foram gerados novamente.";
+    if (r.redistribuida) {
+      aviso += "\nOs novos combates entraram no final das filas das áreas; as demais categorias não foram movidas.";
+    } else if (r.tinhaFila) {
+      aviso += "\nConfigure as áreas e clique em Distribuir campeonato para colocar os novos combates nas filas.";
+    }
+  }
+
+  modoEdicao(false);
+  atualizarTela();
+  alert(aviso);
+}
+
+function excluir(id) {
+  let c = categorias.find(x => x.id === id);
+  if (!c) return;
+
+  if (!confirm(`Excluir a categoria "${c.nome}"?\n\nAs lutas dela também serão removidas. As demais categorias não serão afetadas.`)) return;
+
+  if (categoriaIniciada(id) &&
+      !confirm(`ATENÇÃO: "${c.nome}" já tem lutas iniciadas ou finalizadas.\n\nOs resultados e a classificação dessa categoria serão PERDIDOS e não podem ser recuperados.\n\nConfirma a exclusão mesmo assim?`)) return;
+
+  let r = excluirCategoria(id);   // judo-store.js
+  if (!r.ok) return alert(r.motivo);
+
+  if (editandoId === id) modoEdicao(false);
+  atualizarTela();
+
+  alert(`Categoria "${c.nome}" excluída (${r.lutasRemovidas} luta(s) removida(s)).` +
+    (r.naFila ? "\nAs demais categorias continuam nas mesmas áreas, mas a carga entre as áreas pode ter ficado desigual. Nada foi redistribuído automaticamente." : ""));
+}
+
 async function resetarSistema() {
   if (!confirm("Tem certeza que deseja apagar todo o campeonato?\n\nIsso apaga para TODOS os dispositivos conectados.")) return;
 
@@ -248,6 +335,10 @@ function render() {
         <h3 class="nome">${c.nome}</h3>
         <p class="meta">${c.atletas.length} atletas</p>
         <button class="btn sec" onclick="abrir(${i})">Abrir (somente leitura)</button>
+        <div class="acoes">
+          <button class="btn sec" onclick="editar(${c.id})">Editar</button>
+          <button class="btn perigo" onclick="excluir(${c.id})">Excluir</button>
+        </div>
       </article>
     `;
   });
