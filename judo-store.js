@@ -59,6 +59,8 @@ function _get(key, def) {
 // Escrita: atualiza o cache na hora e grava no Firestore SOMENTE os
 // documentos que mudaram (assim dois celulares finalizando lutas
 // diferentes não sobrescrevem um ao outro).
+let _lote = null;
+
 function _set(key, value) {
   if (!COLECOES[key]) {
     localStorage.setItem(key, JSON.stringify(value));
@@ -69,7 +71,7 @@ function _set(key, value) {
   let antigaPorId = new Map(antiga.map(x => [x.id, x]));
   let novaIds = new Set(value.map(x => x.id));
   let col = db.collection(COLECOES[key]);
-  let batch = db.batch();
+  let batch = _lote || db.batch();
   let mudou = false;
 
   value.forEach(item => {
@@ -89,7 +91,7 @@ function _set(key, value) {
 
   _cache[key] = _clonar(value).sort((a, b) => a.id - b.id);
 
-  if (mudou) {
+  if (mudou && !_lote) {
     batch.commit().catch(err => console.error("Erro ao salvar no Firebase:", err));
   }
 }
@@ -178,9 +180,9 @@ function tipoChaveamento(n) {
 // Cria a categoria (com id, tipo e tabela quando aplicável) e já gera
 // as lutas iniciais dela. Ponto único de entrada usado pela tela de
 // categorias — o motor decide tudo mais.
-function criarCategoriaCompleta(nome, atletas) {
+function criarCategoriaCompleta(nome, atletas, idFixo) {
   let categoriasSalvas = getCategorias();
-  let id = proximoId(categoriasSalvas);
+  let id = idFixo || proximoId(categoriasSalvas);
   let tipo = tipoChaveamento(atletas.length);
 
   let categoria = {
