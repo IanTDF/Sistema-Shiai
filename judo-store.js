@@ -770,3 +770,114 @@ function corrigirResultado(idLuta) {
   return { ok: true };
 }
 
+// ============================================================
+// ✏️🗑️ EDITAR / EXCLUIR CATEGORIA  (bloco novo, colar no FINAL do arquivo)
+// Reaproveita criarCategoriaCompleta, distribuirLutas e os save*.
+// Todas as escritas de cada operação vão em UM único lote do Firestore.
+// ============================================================
+
+// Iniciada = tem alguma luta com resultado (ou cancelada) ou a categoria já foi finalizada
+function categoriaIniciada(categoriaId) {
+  let c = getCategoriaPorId(categoriaId);
+  return !!(c && c.finalizada) ||
+    getLutasPorCategoria(categoriaId).some(l => l.status !== "pendente");
+}
+
+// Executa fn() acumulando todas as escritas em um único lote atômico.
+// Se fn() lançar erro, nada é enviado e o cache local é restaurado.
+function _emLote(fn) {
+  if (_lote) return fn();
+  let backup = _clonar(_cache);
+  _lote = db.batch();
+  let lote = _lote;
+  try {
+    let r = fn();
+    _lote = null;
+    lote.commit().catch(err => console.error("Erro ao salvar no Firebase:", err));
+    return r;
+  } catch (e) {
+    _lote = null;
+    Object.keys(backup).forEach(k => { _cache[k] = backup[k]; });
+    throw e;
+  }
+}
+
+// Remove as lutas da categoria e as referências delas nas filas das áreas.
+// Só mexe em lutas dessa categoria. Usar dentro de _emLote.
+function _removerLutasDaCategoria(categoriaId) {
+  let ids = new Set(getLutasPorCategoria(categoriaId).map(l => l.id));
+  let naFila = 0;
+  let areas = getAreas();
+  areas.forEach(a => {
+    let antes = a.lutas.length;
+    a.lutas = a.lutas.filter(id => !ids.has(id));
+    naFila += antes - a.lutas.length;
+  });
+  saveLutas(getLutas().filter(l => l.categoriaId !== categoriaId));
+  saveAreas(areas);
+  return { total: ids.size, naFila };
+}
+
+// Retorna { ok, lutasRemovidas, naFila } ou { ok:false, motivo }
+function excluirCategoria(categoriaId) {
+  if (!getCategoriaPorId(categoriaId)) {
+    return { ok: false, motivo: "Categoria não encontrada (pode já ter sido excluída)." };
+  }
+  let r;
+  _emLote(() => {
+    r = _removerLutasDaCategoria(categoriaId);
+    saveCategorias(getCategorias().filter(c => c.id !== categoriaId));
+  });
+  return { ok: true, lutasRemovidas: r.total, naFila: r.naFila };
+}
+
+// Só o nome: sempre permitido. Mudança nos atletas: só se nenhuma luta foi iniciada;
+// nesse caso gera de novo SÓ as lutas dessa categoria (mesmo id de categoria).
+// Retorna { ok, regenerou, redistribuida, tinhaFila } ou { ok:false, motivo }
+function editarCategoria(categoriaId, novoNome, novosAtletas) {
+  let categoria = getCategoriaPorId(categoriaId);
+  if (!categoria) {
+    return { ok: false, motivo: "Categoria não encontrada (pode ter sido excluída em outro dispositivo)." };
+  }
+
+  novoNome = String(novoNome || "").trim();
+  if (!novoNome || !novosAtletas || !novosAtletas.length) {
+    return { ok: false, motivo: "Preencha o nome e ao menos um atleta." };
+  }
+
+  let mudouAtletas = JSON.stringify(novosAtletas) !== JSON.stringify(categoria.atletas);
+
+  if (!mudouAtletas) {
+    if (novoNome !== categoria.nome) {
+      let cats = getCategorias();
+      cats.find(c => c.id === categoriaId).nome = novoNome;
+      saveCategorias(cats);
+    }
+    return { ok: true, regenerou: false };
+  }
+
+  if (categoriaIniciada(categoriaId)) {
+    return {
+      ok: false,
+      motivo: "Esta categoria já tem lutas iniciadas ou finalizadas.\n\n" +
+              "Alterar os atletas muda o chaveamento. Para isso é preciso reconfigurar a categoria " +
+              "e reiniciar todos os resultados dela: exclua a categoria e cadastre-a novamente.\n\n" +
+              "Apenas o nome pode ser alterado sem perder resultados."
+    };
+  }
+
+  let tinhaFila = false, redistribuida = false;
+  _emLote(() => {
+    let removidas = _removerLutasDaCategoria(categoriaId);
+    tinhaFila = removidas.naFila > 0;
+    saveCategorias(getCategorias().filter(c => c.id !== categoriaId));
+    let { lutasGeradas } = criarCategoriaCompleta(novoNome, novosAtletas, categoriaId);
+    // só as lutas NOVAS entram nas filas (no final); nada das outras categorias é movido
+    if (tinhaFila && getAreas().length) {
+      distribuirLutas(lutasGeradas);
+      redistribuida = true;
+    }
+  });
+  return { ok: true, regenerou: true, redistribuida, tinhaFila };
+}
+
