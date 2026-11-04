@@ -45,6 +45,23 @@ function _notificar(key) {
   _ouvintes.forEach(fn => { try { fn(key); } catch (e) { console.error(e); } });
 }
 
+// Gravação recusada pelo Firestore (permissão, rede...): avisa na tela.
+// O Firestore desfaz a escrita local e os listeners devolvem o estado real
+// do servidor, então a tela volta ao que de fato está salvo.
+let _avisoAberto = false;
+function _falhaGravacao(err) {
+  console.error("Erro ao salvar no Firebase:", err);
+  if (_avisoAberto) return;
+  _avisoAberto = true;
+  let negada = err && (err.code === "permission-denied" || err.code === "unauthenticated");
+  setTimeout(() => {
+    alert(negada
+      ? "⚠️ GRAVAÇÃO RECUSADA\n\nVocê não tem permissão para esta operação, ou sua sessão expirou. O resultado NÃO foi salvo. Entre novamente e confira os dados na tela."
+      : "⚠️ ERRO AO SALVAR\n\nA gravação não foi confirmada pelo servidor (" + ((err && err.code) || "erro") + "). Confira os dados na tela antes de continuar.");
+    _avisoAberto = false;
+  }, 50);
+}
+
 // Leitura: devolve uma CÓPIA do cache (o motor altera o array e depois
 // chama save*, então precisa ser uma cópia para o diff funcionar).
 function _get(key, def) {
@@ -92,7 +109,7 @@ function _set(key, value) {
   _cache[key] = _clonar(value).sort((a, b) => a.id - b.id);
 
   if (mudou && !_lote) {
-    batch.commit().catch(err => console.error("Erro ao salvar no Firebase:", err));
+    batch.commit().catch(_falhaGravacao);
   }
 }
 
@@ -795,7 +812,7 @@ function _emLote(fn) {
   try {
     let r = fn();
     _lote = null;
-    lote.commit().catch(err => console.error("Erro ao salvar no Firebase:", err));
+    lote.commit().catch(_falhaGravacao);
     return r;
   } catch (e) {
     _lote = null;
