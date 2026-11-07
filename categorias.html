@@ -98,6 +98,10 @@
     }
     .btn.prim { background: var(--tinta); color: #fff; }
     .btn.prim:hover { background: #17407a; }
+    .btn { transition: background .15s, border-color .15s, transform .08s; }
+    .btn:active { transform: scale(.97); }
+    /* feedback depois de adicionar a categoria */
+    .btn.prim.ok, .btn.prim.ok:hover { background: var(--verde); border-color: var(--verde); }
     .btn.sec { background: #fff; color: var(--tinta); }
     .btn.sec:hover { background: #eef1f6; }
     .btn.perigo { background: #fff; color: var(--perigo); border-color: var(--perigo); }
@@ -221,6 +225,23 @@ function adicionar() {
   categorias.push(categoria);
 
   render();
+  feedbackAdicionado();
+
+  // limpa o formulário para a próxima categoria
+  document.getElementById("nomeCategoria").value = "";
+  document.getElementById("listaAtletas").value = "";
+  document.getElementById("nomeCategoria").focus();
+}
+
+// Só visual: o botão fica verde por um instante confirmando o clique.
+function feedbackAdicionado() {
+  let b = document.getElementById("btnAdicionar");
+  b.classList.add("ok");
+  b.textContent = "✔ Categoria adicionada!";
+  setTimeout(() => {
+    b.classList.remove("ok");
+    b.textContent = "Adicionar categoria";
+  }, 1500);
 }
 
 // ================= EDITAR / EXCLUIR CATEGORIA =================
