@@ -584,12 +584,9 @@ function painelResultado(categoria, qtdLinhas) {
   `;
 }
 
-function painelClassificacao(categoria) {
-  let ranking = Object.entries(categoria.tabela || {});
-  ranking.sort((a, b) => {
-    if (b[1].vitorias !== a[1].vitorias) return b[1].vitorias - a[1].vitorias;
-    return b[1].pontos - a[1].pontos;
-  });
+function painelClassificacao(categoria, lutas) {
+  // calculada das lutas finalizadas (judo-store.js), igual ao chaves.html
+  let ranking = classificacaoRodizio(categoria, lutas);
   let cores = ["ouro", "prata", "bronze"];
 
   return `
@@ -639,7 +636,7 @@ function renderRodizio(categoria, lutas) {
   return `
     <div class="rz">
       <div class="rz-rodadas">${colunas}</div>
-      ${painelClassificacao(categoria)}
+      ${painelClassificacao(categoria, lutas)}
     </div>
   `;
 }
