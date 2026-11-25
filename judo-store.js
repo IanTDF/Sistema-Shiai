@@ -321,6 +321,34 @@ function pontosPorTipo(tipoVitoria) {
   return 0;
 }
 
+// ================= CLASSIFICAÇÃO DO RODÍZIO =================
+// Calculada SEMPRE a partir das lutas finalizadas da categoria (cada luta
+// vale exatamente uma vitória e os pontos do seu tipoVitoria). Não é gravada
+// em lugar nenhum, então não há valor antigo que possa sobrescrever um mais
+// novo, e a ordem em que os aparelhos recebem as atualizações não importa.
+// Retorna [[atleta, { pontos, vitorias }], ...] já ordenado: mais vitórias,
+// depois mais pontos; empate total mantém a ordem do cadastro (como antes).
+// "lutas" é opcional (as telas já têm as lutas da categoria em mãos).
+function classificacaoRodizio(categoria, lutas) {
+  lutas = lutas || getLutasPorCategoria(categoria.id);
+
+  let linhas = new Map();
+  (categoria.atletas || []).forEach(a => linhas.set(a, { pontos: 0, vitorias: 0 }));
+
+  lutas.forEach(l => {
+    if (l.categoriaId !== categoria.id || l.tipo !== "rodizio" || l.status !== "finalizada") return;
+    let linha = linhas.get(l.vencedor);
+    if (!linha) return;
+    linha.vitorias += 1;
+    linha.pontos += pontosPorTipo(l.tipoVitoria);
+  });
+
+  return Array.from(linhas.entries()).sort((a, b) => {
+    if (b[1].vitorias !== a[1].vitorias) return b[1].vitorias - a[1].vitorias;
+    return b[1].pontos - a[1].pontos;
+  });
+}
+
 // ================= ÁREAS (TATAMES) =================
 // { id, lutas: [idsDeLuta] } — áreas só REFERENCIAM lutas, nunca copiam.
 
@@ -540,12 +568,13 @@ function atualizarResultado(idLuta, vencedor, tipoVitoria) {
   let categoria = categorias.find(c => c.id === luta.categoriaId);
   if (!categoria) return luta;
 
-  // ---------- RODÍZIO: só pontuação, sem avanço de fase ----------
+  // ---------- RODÍZIO: sem avanço de fase e SEM escrita na categoria ----------
+  // A classificação é calculada das lutas finalizadas (classificacaoRodizio).
+  // Antes, aqui se lia categoria.tabela do cache local, somava e gravava o
+  // documento inteiro da categoria: com dois aparelhos registrando quase ao
+  // mesmo tempo, um sobrescrevia a vitória do outro.
   if (luta.tipo === "rodizio") {
-    let pontos = pontosPorTipo(tipoVitoria);
-    categoria.tabela[vencedor].pontos += pontos;
-    categoria.tabela[vencedor].vitorias += 1;
-    saveCategorias(categorias);
+    // nada a gravar: o resultado já está na própria luta
   }
 
   // ---------- MELHOR DE 3: verifica se a série já foi decidida ----------
@@ -717,13 +746,12 @@ function corrigirResultado(idLuta) {
   luta.tipoVitoria = null;
   luta.status = "pendente";
 
-  // ---------- RODÍZIO: desfaz a pontuação (mesma regra de pontos do motor) ----------
+  // ---------- RODÍZIO: nada a desfazer na categoria ----------
+  // A classificação é derivada das lutas finalizadas: ao voltar a luta para
+  // "pendente", ela deixa de contar sozinha; o novo resultado passa a contar
+  // quando for registrado.
   if (luta.tipo === "rodizio") {
-    if (categoria && categoria.tabela && categoria.tabela[vencedorAntigo]) {
-      categoria.tabela[vencedorAntigo].pontos -= pontosPorTipo(tipoVitoriaAntigo);
-      categoria.tabela[vencedorAntigo].vitorias -= 1;
-      mudouCategorias = true;
-    }
+    // sem escrita na categoria
   }
 
   // ---------- MELHOR DE 3: reabre a série se ela deixou de estar decidida ----------
@@ -899,4 +927,3 @@ function editarCategoria(categoriaId, novoNome, novosAtletas) {
   });
   return { ok: true, regenerou: true, redistribuida, tinhaFila };
 }
-
