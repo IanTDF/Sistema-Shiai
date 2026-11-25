@@ -221,12 +221,9 @@ function statusCategoria(c, lutas) {
 }
 
 // Mesma regra de classificação usada no chaveamento.html
-function podio(c) {
+function podio(c, lutas) {
   if (c.tipo === "rodizio") {
-    let ranking = Object.entries(c.tabela || {}).sort((a, b) => {
-      if (b[1].vitorias !== a[1].vitorias) return b[1].vitorias - a[1].vitorias;
-      return b[1].pontos - a[1].pontos;
-    });
+    let ranking = classificacaoRodizio(c, lutas);   // mesma função do chaveamento.html
     return ranking.slice(0, 3).map((r, i) => ({
       pos: i + 1, nome: r[0], det: r[1].vitorias + " vit. e " + r[1].pontos + " pts"
     }));
@@ -241,8 +238,8 @@ function podio(c) {
   return linhas.filter(x => x.nome);
 }
 
-function htmlPodio(c) {
-  let linhas = podio(c);
+function htmlPodio(c, lutas) {
+  let linhas = podio(c, lutas);
   if (!linhas.length) return "";
   return `
     <div class="pod">
@@ -304,7 +301,7 @@ function render() {
           <span>🥋 ${esc(ROTULOS[c.tipo] || "Chaveamento")}</span>
         </div>
         <div class="prog">${textoLutas(c, lutas)}</div>
-        ${st === "finalizada" ? htmlPodio(c) : ""}
+        ${st === "finalizada" ? htmlPodio(c, lutas) : ""}
         <a class="abrir" href="chaveamento.html?categoria=${c.id}" target="_blank" rel="noopener">Abrir chave</a>
       </article>`;
   }).join("");
